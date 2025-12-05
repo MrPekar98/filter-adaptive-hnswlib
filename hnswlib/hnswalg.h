@@ -1,11 +1,11 @@
 #pragma once
 
 #include "visited_list_pool.h"
-#include "hnswlib.h"
+#include "tag_index.h"
 #include <atomic>
 #include <random>
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 #include <unordered_set>
 #include <list>
 #include <memory>
@@ -16,7 +16,7 @@ typedef unsigned int linklistsizeint;
 
 template<typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
- public:
+public:
     static const tableint MAX_LABEL_OPERATION_LOCKS = 65536;
     static const unsigned char DELETE_MARK = 0x01;
 
@@ -70,10 +70,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::mutex deleted_elements_lock;  // lock for deleted_elements
     std::unordered_set<tableint> deleted_elements;  // contains internal ids of deleted elements
 
+    TagIndex<tableint> tag_index;
 
-    HierarchicalNSW(SpaceInterface<dist_t> *s) {
-    }
-
+    HierarchicalNSW(SpaceInterface<dist_t> *s)
+        : tag_index(100000)
+    {}
 
     HierarchicalNSW(
         SpaceInterface<dist_t> *s,
@@ -81,10 +82,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         bool nmslib = false,
         size_t max_elements = 0,
         bool allow_replace_deleted = false)
-        : allow_replace_deleted_(allow_replace_deleted) {
+        : allow_replace_deleted_(allow_replace_deleted), tag_index(max_elements) {
         loadIndex(location, s, max_elements);
     }
-
 
     HierarchicalNSW(
         SpaceInterface<dist_t> *s,
@@ -96,7 +96,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         : label_op_locks_(MAX_LABEL_OPERATION_LOCKS),
             link_list_locks_(max_elements),
             element_levels_(max_elements),
-            allow_replace_deleted_(allow_replace_deleted) {
+            allow_replace_deleted_(allow_replace_deleted),
+            tag_index(max_elements) {
         max_elements_ = max_elements;
         num_deleted_ = 0;
         data_size_ = s->get_data_size();
@@ -159,6 +160,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         linkLists_ = nullptr;
         cur_element_count = 0;
         visited_list_pool_.reset(nullptr);
+        tag_index.clear();
     }
 
 
@@ -709,6 +711,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             if (linkListSize)
                 output.write(linkLists_[i], linkListSize);
         }
+
+        tag_index.save_index(output);
         output.close();
     }
 
@@ -816,6 +820,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             }
         }
 
+        tag_index.load_index(input);
         input.close();
 
         return;
