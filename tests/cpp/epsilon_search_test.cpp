@@ -37,8 +37,8 @@ int main() {
     for (int i = 0; i < max_elements; i++) {
         hnswlib::labeltype label = i;
         float* point_data = data + i * dim;
-        alg_hnsw->addPoint(point_data, label);
-        alg_brute->addPoint(point_data, label);
+        alg_hnsw->addPoint(point_data, label, {});
+        alg_brute->addPoint(point_data, label, {});
     }
     std::cout << "Index is ready\n";
 

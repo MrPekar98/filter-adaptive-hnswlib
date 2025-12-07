@@ -24,7 +24,7 @@ int main() {
 
     // Add data to index
     for (int i = 0; i < max_elements; i++) {
-        alg_hnsw->addPoint(data + i * dim, i);
+        alg_hnsw->addPoint(data + i * dim, i, {});
     }
 
     // Mark first half of elements as deleted
@@ -44,7 +44,7 @@ int main() {
     // but we can replace the deleted ones by using replace_deleted=true
     for (int i = 0; i < num_deleted; i++) {
         hnswlib::labeltype label = max_elements + i;
-        alg_hnsw->addPoint(add_data + i * dim, label, true);
+        alg_hnsw->addPoint(add_data + i * dim, label, {}, true);
     }
 
     delete[] data;

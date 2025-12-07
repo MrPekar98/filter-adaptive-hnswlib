@@ -293,6 +293,7 @@ namespace hnswlib
             return *(maxFrequenciesPerLevel + level);
         }
 
+        // TODO: Does not work currently
         [[nodiscard]] double tagsSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const noexcept
         {
             if (tags1.empty() || tags2.empty())

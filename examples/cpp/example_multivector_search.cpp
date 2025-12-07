@@ -47,7 +47,7 @@ int main() {
     for (int i = 0; i < max_elements; i++) {
         hnswlib::labeltype label = i;
         char* point_data = data + i * data_point_size;
-        alg_hnsw->addPoint(point_data, label);
+        alg_hnsw->addPoint(point_data, label, {});
         label_docid_lookup[label] = space.get_doc_id(point_data);
     }
 

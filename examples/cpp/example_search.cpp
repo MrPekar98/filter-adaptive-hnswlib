@@ -23,7 +23,7 @@ int main() {
 
     // Add data to index
     for (int i = 0; i < max_elements; i++) {
-        alg_hnsw->addPoint(data + i * dim, i);
+        alg_hnsw->addPoint(data + i * dim, i, {});
     }
 
     // Query the elements for themselves and measure recall

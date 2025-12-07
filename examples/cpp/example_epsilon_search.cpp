@@ -39,7 +39,7 @@ int main() {
     for (int i = 0; i < max_elements; i++) {
         hnswlib::labeltype label = i;
         char* point_data = data + i * data_point_size;
-        alg_hnsw->addPoint(point_data, label);
+        alg_hnsw->addPoint(point_data, label, {});
     }
 
     // Query random vectors

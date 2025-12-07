@@ -39,7 +39,7 @@ int main() {
                             for (int i = 0; i < d; i++) {
                                 data[i] = distrib_real(rng);
                             }
-                            alg_hnsw->addPoint(data.data(), label);
+                            alg_hnsw->addPoint(data.data(), label, {});
                         }
                     }
                 )
@@ -63,7 +63,7 @@ int main() {
             for (int i = 0; i < d; i++) {
                 data[i] = distrib_real(rng);
             }
-            alg_hnsw->addPoint(data.data(), label);
+            alg_hnsw->addPoint(data.data(), label, {});
         }
     }
 
@@ -114,7 +114,7 @@ int main() {
                         for (int i = 0; i < d; i++) {
                             data[i] = distrib_real(rng);
                         }
-                        alg_hnsw->addPoint(data.data(), label);
+                        alg_hnsw->addPoint(data.data(), label, {});
                         std::vector<float> data = alg_hnsw->getDataByLabel<float>(label);
                         float max_val = *max_element(data.begin(), data.end());
                         // never happens but prevents compiler from deleting unused code

@@ -316,7 +316,7 @@ void sift_test1B() {
             mass[j] = massb[j] * (1.0f);
         }
 
-        appr_alg->addPoint((void *) (massb), (size_t) 0);
+        appr_alg->addPoint((void *) (massb), (size_t) 0, {});
         int j1 = 0;
         StopW stopw = StopW();
         StopW stopw_full = StopW();
@@ -345,7 +345,7 @@ void sift_test1B() {
                     stopw.reset();
                 }
             }
-            appr_alg->addPoint((void *) (mass), (size_t) j2);
+            appr_alg->addPoint((void *) (mass), (size_t) j2, {});
         }
         input.close();
         cout << "Build time:" << 1e-6 * stopw_full.getElapsedTimeMicro() << "  seconds\n";

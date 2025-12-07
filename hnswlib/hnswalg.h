@@ -956,7 +956,7 @@ public:
     * Adds point. Updates the point if it is already in the index.
     * If replacement of deleted elements is enabled: replaces previously deleted point if any, updating it with new point
     */
-    void addPoint(const void *data_point, labeltype label, bool replace_deleted = false) {
+    void addPoint(const void *data_point, labeltype label, const std::vector<std::string>& tags, bool replace_deleted = false) {
         if ((allow_replace_deleted_ == false) && (replace_deleted == true)) {
             throw std::runtime_error("Replacement of deleted elements is disabled in constructor");
         }
@@ -964,7 +964,7 @@ public:
         // lock all operations with element by label
         std::unique_lock <std::mutex> lock_label(getLabelOpMutex(label));
         if (!replace_deleted) {
-            addPoint(data_point, label, -1);
+            addPoint(data_point, label, tags, -1);
             return;
         }
         // check if there is vacant place
@@ -980,7 +980,7 @@ public:
         // if there is no vacant place then add or update point
         // else add point to vacant place
         if (!is_vacant_place) {
-            addPoint(data_point, label, -1);
+            addPoint(data_point, label, tags, -1);
         } else {
             // we assume that there are no concurrent operations on deleted element
             labeltype label_replaced = getExternalLabel(internal_id_replaced);
@@ -1155,7 +1155,7 @@ public:
     }
 
 
-    tableint addPoint(const void *data_point, labeltype label, int level) {
+    tableint addPoint(const void *data_point, labeltype label, const std::vector<std::string>& tags, int level) {
         tableint cur_c = 0;
         {
             // Checking if the element with the same label already exists
@@ -1175,6 +1175,7 @@ public:
                     unmarkDeletedInternal(existingInternalId);
                 }
                 updatePoint(data_point, existingInternalId, 1.0);
+                tag_index.insert(existingInternalId, tags, element_levels_[existingInternalId]);
 
                 return existingInternalId;
             }
@@ -1268,6 +1269,7 @@ public:
             enterpoint_node_ = cur_c;
             maxlevel_ = curlevel;
         }
+        tag_index.insert(cur_c, tags, curlevel);
         return cur_c;
     }
 

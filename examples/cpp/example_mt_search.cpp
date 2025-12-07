@@ -83,7 +83,7 @@ int main() {
 
     // Add data to index
     ParallelFor(0, max_elements, num_threads, [&](size_t row, size_t threadId) {
-        alg_hnsw->addPoint((void*)(data + dim * row), row);
+        alg_hnsw->addPoint((void*)(data + dim * row), row, {});
     });
 
     // Query the elements for themselves and measure recall

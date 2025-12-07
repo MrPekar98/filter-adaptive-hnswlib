@@ -55,8 +55,8 @@ void test_some_filtering(hnswlib::BaseFilterFunctor& filter_func, size_t div_num
 
     for (size_t i = 0; i < n; ++i) {
         // `label_id_start` is used to ensure that the returned IDs are labels and not internal IDs
-        alg_brute->addPoint(data.data() + d * i, label_id_start + i);
-        alg_hnsw->addPoint(data.data() + d * i, label_id_start + i);
+        alg_brute->addPoint(data.data() + d * i, label_id_start + i, {});
+        alg_hnsw->addPoint(data.data() + d * i, label_id_start + i, {});
     }
 
     // test searchKnnCloserFirst of BruteforceSearch with filtering
@@ -117,8 +117,8 @@ void test_none_filtering(hnswlib::BaseFilterFunctor& filter_func, size_t label_i
 
     for (size_t i = 0; i < n; ++i) {
         // `label_id_start` is used to ensure that the returned IDs are labels and not internal IDs
-        alg_brute->addPoint(data.data() + d * i, label_id_start + i);
-        alg_hnsw->addPoint(data.data() + d * i, label_id_start + i);
+        alg_brute->addPoint(data.data() + d * i, label_id_start + i, {});
+        alg_hnsw->addPoint(data.data() + d * i, label_id_start + i, {});
     }
 
     // test searchKnnCloserFirst of BruteforceSearch with filtering
