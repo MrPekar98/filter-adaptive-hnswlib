@@ -175,7 +175,7 @@ namespace hnswlib
 
                 maxFrequenciesPerLevel = maxLevelFrequencyCopy;
 
-                for (int i = levels; i < (level + 1) - levels; i++)
+                for (int i = levels; i < (level + 1); i++)
                 {
                     size_t* maxFrequency = maxFrequenciesPerLevel + i;
                     *maxFrequency = 0;
@@ -334,12 +334,14 @@ namespace hnswlib
             return sum / unionSize(tagIds1, tagIds2);
         }
 
+        // TODO: To be finished
         void save_index(std::ofstream& output) const
         {
 
             relationship_graph.save_index(output);
         }
 
+        // TODO: To be finished
         void load_index(std::ifstream& input)
         {
 
