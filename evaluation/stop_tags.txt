@@ -1,0 +1,4 @@
+http://www.w3.org/2002/07/owl#Thing
+http://www.wikidata.org/entity/Q24229398
+http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Agent
+http://dbpedia.org/ontology/Agent

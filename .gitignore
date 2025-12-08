@@ -12,3 +12,5 @@ var/
 **.DS_Store
 *.pyc
 cmake-build-debug/
+evaluation/*.ttl
+evaluation/data.txt
