@@ -314,6 +314,7 @@ public:
         tableint ep_id,
         const void *data_point,
         size_t ef,
+        const std::vector<std::string>& tags,
         BaseFilterFunctor* isIdAllowed = nullptr,
         BaseSearchStopCondition<dist_t>* stop_condition = nullptr) const {
         VisitedList *vl = visited_list_pool_->getFreeVisitedList();
@@ -329,7 +330,18 @@ public:
             char* ep_data = getDataByInternalId(ep_id);
             dist_t dist = fstdistfunc_(data_point, ep_data, dist_func_param_);
             lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
+            if (tags.empty()){
+                top_candidates.emplace(dist, ep_id);
+            } else {
+                std::vector<std::string> nodeTags = tag_index.get(ep_id);
+
+                for (const std::string& tag : tags) {
+                    if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
+                        top_candidates.emplace(dist, ep_id);
+                        break;
+                    }
+                }
+            }
             if (!bare_bone_search && stop_condition) {
                 stop_condition->add_point_to_result(getExternalLabel(ep_id), ep_data, dist);
             }
@@ -407,7 +419,18 @@ public:
 
                         if (bare_bone_search || 
                             (!isMarkedDeleted(candidate_id) && ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))))) {
-                            top_candidates.emplace(dist, candidate_id);
+                            if (tags.empty()) {
+                                top_candidates.emplace(dist, candidate_id);
+                            } else {
+                                std::vector<std::string> nodeTags = tag_index.get(candidate_id);
+
+                                for (const std::string& tag : nodeTags) {
+                                    if (std::find(tags.begin(), tags.end(), tag) != tags.end()) {
+                                        top_candidates.emplace(dist, candidate_id);
+                                        break;
+                                    }
+                                }
+                            }
                             if (!bare_bone_search && stop_condition) {
                                 stop_condition->add_point_to_result(getExternalLabel(candidate_id), currObj1, dist);
                             }
@@ -1279,7 +1302,7 @@ public:
         std::priority_queue<std::pair<dist_t, labeltype >> result;
         if (cur_element_count == 0) return result;
 
-        tableint currObj = enterpoint_node_;
+        tableint currObj = enterpoint_node_, currTagObj = -1;
         dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
         for (int level = maxlevel_; level > 0; level--) {
@@ -1304,6 +1327,19 @@ public:
                         curdist = d;
                         currObj = cand;
                         changed = true;
+
+                        if (tags.empty()) {
+                            currTagObj = cand;
+                        } else {
+                            std::vector<std::string> nodeTags = tag_index.get(cand);
+
+                            for (const std::string& tag : tags) {
+                                if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
+                                    currTagObj = cand;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1311,12 +1347,13 @@ public:
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
         bool bare_bone_search = !num_deleted_ && !isIdAllowed;
+        currObj = currTagObj != -1 ? currTagObj : currObj;  // We prioritize closest node satisfying a query filter
         if (bare_bone_search) {
             top_candidates = searchBaseLayerST<true>(
-                    currObj, query_data, std::max(ef_, k), isIdAllowed);
+                    currObj, query_data, std::max(ef_, k), tags, isIdAllowed);
         } else {
             top_candidates = searchBaseLayerST<false>(
-                    currObj, query_data, std::max(ef_, k), isIdAllowed);
+                    currObj, query_data, std::max(ef_, k), tags, isIdAllowed);
         }
 
         while (top_candidates.size() > k) {
@@ -1335,6 +1372,7 @@ public:
     searchStopConditionClosest(
         const void *query_data,
         BaseSearchStopCondition<dist_t>& stop_condition,
+        const std::vector<std::string>& tags = {},
         BaseFilterFunctor* isIdAllowed = nullptr) const {
         std::vector<std::pair<dist_t, labeltype >> result;
         if (cur_element_count == 0) return result;
@@ -1370,7 +1408,7 @@ public:
         }
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
-        top_candidates = searchBaseLayerST<false>(currObj, query_data, 0, isIdAllowed, &stop_condition);
+        top_candidates = searchBaseLayerST<false>(currObj, query_data, 0, tags, isIdAllowed, &stop_condition);
 
         size_t sz = top_candidates.size();
         result.resize(sz);
