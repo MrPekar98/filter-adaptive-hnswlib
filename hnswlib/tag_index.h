@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 
 namespace hnswlib
 {
@@ -18,8 +17,8 @@ namespace hnswlib
     class TagIndex
     {
     private:
-        const size_t expand_size = 10000;
-        const size_t internal_expand_size = 16;
+        static constexpr size_t expand_size = 10000;
+        static constexpr size_t internal_expand_size = 16;
 
         size_t capacity, levels = 1, count = 0;
         unsigned tagIdCounter = 1;
@@ -27,7 +26,7 @@ namespace hnswlib
         size_t* entries = nullptr;
         tag_type** tags = nullptr;
 
-        std::vector<std::unordered_map<int, size_t>> levelTagFrequency;
+        std::vector<std::unordered_map<tag_type, size_t>> levelTagFrequency;
         size_t *maxFrequenciesPerLevel;
 
         std::unordered_map<tag_type, std::string> lookup;
@@ -84,7 +83,7 @@ namespace hnswlib
                 expansion += internal_expand_size;
             }
 
-            size_t* capacity = (size_t*) capacities + internalId;
+            size_t* capacity = capacities + internalId;
             *capacity += expansion;
             tag_type* idTags = tags[internalId];
             tag_type* idTagsCopy = (tag_type*) realloc(idTags, sizeof(tag_type) * *capacity);
@@ -334,18 +333,120 @@ namespace hnswlib
             return sum / unionSize(tagIds1, tagIds2);
         }
 
-        // TODO: To be finished
-        void save_index(std::ofstream& output) const
+        void saveIndex(std::ofstream& output) const
         {
+            output.write((char*) &capacity, sizeof(size_t));
+            output.write((char*) &levels, sizeof(size_t));
+            output.write((char*) &count, sizeof(size_t));
+            output.write((char*) &tagIdCounter, sizeof(unsigned));
+            output.write((char*) capacities, sizeof(size_t) * capacity);
+            output.write((char*) entries, sizeof(size_t) * capacity);
+            output.write((char*) maxFrequenciesPerLevel, sizeof(size_t) * levels);
 
-            relationship_graph.save_index(output);
+            for (size_t i = 0; i < capacity; i++)
+            {
+                size_t internalCapacity = *(capacities + i);
+                output.write((char*) tags[i], sizeof(tag_type) * internalCapacity);
+            }
+
+            for (int level = 0; level < levels; level++)
+            {
+                std::unordered_map<tag_type, size_t> tagFrequencies = levelTagFrequency[level];
+                std::size_t size = tagFrequencies.size();
+                output.write((char*) &size, sizeof(std::size_t));
+
+                for (const auto& pair : tagFrequencies)
+                {
+                    output.write((char*) &pair.first, sizeof(tag_type));
+                    output.write((char*) &pair.second, sizeof(size_t));
+                }
+            }
+
+            std::size_t size = lookup.size();
+            output.write((char*) &size, sizeof(std::size_t));
+
+            for (const auto& pair : lookup)
+            {
+                tag_type tagId = pair.first;
+                std::string tag = pair.second;
+                const char* cTag = tag.c_str();
+                std::size_t tagLength = tag.length();
+                output.write((char*) &tagId, sizeof(tag_type));
+                output.write((char*) &tagLength, sizeof(std::size_t));
+                output.write(cTag, sizeof(char) * tagLength);
+            }
+
+            relationship_graph.saveIndex(output);
         }
 
-        // TODO: To be finished
-        void load_index(std::ifstream& input)
+        void loadIndex(std::ifstream& input)
         {
+            input.read((char*) &capacity, sizeof(size_t));
+            input.read((char*) &levels, sizeof(size_t));
+            input.read((char*) &count, sizeof(size_t));
+            input.read((char*) &tagIdCounter, sizeof(unsigned));
 
-            relationship_graph.load_index(input);
+            capacities = (size_t*) malloc(sizeof(size_t) * capacity);
+            entries = (size_t*) malloc(sizeof(size_t) * capacity);
+            maxFrequenciesPerLevel = (size_t*) malloc(sizeof(size_t) * levels);
+            tags = (tag_type**) malloc(sizeof(tag_type*) * capacity);
+
+            if (!capacities || ! entries || !tags)
+            {
+                throw std::runtime_error("Not enough memory");
+            }
+
+            input.read((char*) capacities, sizeof(size_t) * capacity);
+            input.read((char* ) entries, sizeof(size_t) * capacity);
+            input.read((char*) maxFrequenciesPerLevel, sizeof(size_t) * levels);
+
+            for (size_t i = 0; i < capacity; i++)
+            {
+                size_t internalCapacity = *(capacities + i);
+                tags[i] = (tag_type*) malloc(sizeof(tag_type) * internalCapacity);
+                input.read((char*) tags[i], sizeof(tag_type) * internalCapacity);
+            }
+
+            for (int level = 0; level < levels; level++)
+            {
+                std::unordered_map<tag_type, size_t> tagFrequencies;
+                std::size_t size;
+                input.read((char*) &size, sizeof(std::size_t));
+                levelTagFrequency.emplace_back();
+
+                for (int i = 0; i < size; i++)
+                {
+                    tag_type tag;
+                    size_t frequency;
+                    input.read((char*) &tag, sizeof(tag_type));
+                    input.read((char*) &frequency, sizeof(size_t));
+                    tagFrequencies.insert({tag, frequency});
+                }
+
+                levelTagFrequency[level] = tagFrequencies;
+            }
+
+            std::size_t size;
+            input.read((char*) &size, sizeof(std::size_t));
+
+            for (int i = 0; i < size; i++)
+            {
+                tag_type tagId;
+                char* cTag;
+                std::size_t tagLength;
+                input.read((char*) &tagId, sizeof(tag_type));
+                input.read((char*) &tagLength, sizeof(std::size_t));
+
+                cTag = (char*) malloc(tagLength);
+                input.read(cTag, sizeof(char) * tagLength);
+
+                std::string tag = cTag;
+                tag = tag.substr(0, tagLength);
+                lookup.insert({tagId, tag});
+                inverted.insert({tag, tagId});
+            }
+
+            relationship_graph.loadIndex(input);
         }
     };
 }

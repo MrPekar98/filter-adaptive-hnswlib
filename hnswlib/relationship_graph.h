@@ -26,12 +26,12 @@ namespace hnswlib
 
         }
 
-        void save_index(std::ofstream& output) const
+        void saveIndex(std::ofstream& output) const
         {
 
         }
 
-        void load_index(std::ifstream& input)
+        void loadIndex(std::ifstream& input)
         {
 
         }

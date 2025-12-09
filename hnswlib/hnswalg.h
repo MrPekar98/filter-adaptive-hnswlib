@@ -735,7 +735,7 @@ public:
                 output.write(linkLists_[i], linkListSize);
         }
 
-        tag_index.save_index(output);
+        tag_index.saveIndex(output);
         output.close();
     }
 
@@ -843,7 +843,7 @@ public:
             }
         }
 
-        tag_index.load_index(input);
+        tag_index.loadIndex(input);
         input.close();
 
         return;
