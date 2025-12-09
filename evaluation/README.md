@@ -20,7 +20,6 @@ Run the following scripts to generate queries and ground truth.
 ```bash
 python gen_queries.py
 python process_input_data.py
-python gen_groundtruth.py
 ```
 
 To gain insights into the RDF type distribution, run the following script.
@@ -47,3 +46,8 @@ Hypothetically, our adaptive HNSW index improves the ranking quality of a single
 We allow our adaptive HNSW index to adapt to the query workload, which results in an acceptable increase in query runtime.
 
 Now, construct the baseline indexes and store them on disk with the following commands.
+
+```bash
+g++ index_postfilter_baseline.cpp -o index_postfilter_baseline -I ../hnswlib/
+./index_postfilter_baseline
+```
