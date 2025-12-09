@@ -3,6 +3,7 @@
 #include "relationship_graph.h"
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <set>
 #include <stdexcept>
@@ -115,7 +116,7 @@ namespace hnswlib
 
     public:
         explicit TagIndex(size_t capacity)
-            : capacity(capacity)
+            : capacity(capacity), relationship_graph(RelationshipGraph<tag_type>(lookup, inverted))
         {
             tags = (tag_type**) malloc(sizeof(tag_type*) * capacity);
             capacities = (size_t*) malloc(sizeof(size_t) * capacity);
@@ -191,7 +192,7 @@ namespace hnswlib
 
             size_t* internalCapacity = capacities + internalId;
             size_t* internalEntries = entries + internalId;
-            std::vector<tag_type> tagIds;
+            std::unordered_set<tag_type> tagIds;
             tagIds.reserve(internalTags.size());
 
             for (const std::string& tag : internalTags)
@@ -210,7 +211,7 @@ namespace hnswlib
                 tag_type tagId = inverted[tag];
                 memcpy(tags[internalId] + *internalEntries, &tagId, sizeof(tag_type));
                 (*internalEntries)++;
-                tagIds.push_back(tagId);
+                tagIds.insert(tagId);
 
                 for (int levelCopy = static_cast<int>(level); levelCopy >= 0; levelCopy--)
                 {
@@ -292,7 +293,6 @@ namespace hnswlib
             return *(maxFrequenciesPerLevel + level);
         }
 
-        // TODO: Does not work currently
         [[nodiscard]] double tagsSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const noexcept
         {
             if (tags1.empty() || tags2.empty())
@@ -331,6 +331,11 @@ namespace hnswlib
             }
 
             return sum / unionSize(tagIds1, tagIds2);
+        }
+
+        RelationshipGraph<tag_type>& getRelationshipGraph() noexcept
+        {
+            return relationship_graph;
         }
 
         void saveIndex(std::ofstream& output) const
@@ -446,7 +451,7 @@ namespace hnswlib
                 inverted.insert({tag, tagId});
             }
 
-            relationship_graph.loadIndex(input);
+            relationship_graph.loadIndex(input, lookup, inverted);
         }
     };
 }
