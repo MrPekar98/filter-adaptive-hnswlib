@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <list>
 #include <memory>
+#include <random>
 
 namespace hnswlib {
 typedef unsigned int tableint;
@@ -71,18 +72,26 @@ public:
     std::unordered_set<tableint> deleted_elements;  // contains internal ids of deleted elements
 
     TagIndex<tableint> tag_index;
+    bool adaptive;
+    std::mt19937 gen;
+    std::uniform_int_distribution<> distr;
 
     HierarchicalNSW(SpaceInterface<dist_t> *s)
         : tag_index(100000)
-    {}
+    {
+        std::random_device rd;
+        gen = std::mt19937(rd());
+        distr = std::uniform_int_distribution<>(1, 100);
+    }
 
     HierarchicalNSW(
         SpaceInterface<dist_t> *s,
         const std::string &location,
         bool nmslib = false,
         size_t max_elements = 0,
-        bool allow_replace_deleted = false)
-        : allow_replace_deleted_(allow_replace_deleted), tag_index(max_elements) {
+        bool allow_replace_deleted = false,
+        bool adaptive = false)
+        : allow_replace_deleted_(allow_replace_deleted), tag_index(max_elements), adaptive(adaptive) {
         loadIndex(location, s, max_elements);
     }
 
@@ -92,12 +101,14 @@ public:
         size_t M = 16,
         size_t ef_construction = 200,
         size_t random_seed = 100,
-        bool allow_replace_deleted = false)
+        bool allow_replace_deleted = false,
+        bool adaptive = false)
         : label_op_locks_(MAX_LABEL_OPERATION_LOCKS),
             link_list_locks_(max_elements),
             element_levels_(max_elements),
             allow_replace_deleted_(allow_replace_deleted),
-            tag_index(max_elements) {
+            tag_index(max_elements),
+            adaptive(adaptive) {
         max_elements_ = max_elements;
         num_deleted_ = 0;
         data_size_ = s->get_data_size();
@@ -205,11 +216,53 @@ public:
         return (data_level0_memory_ + internal_id * size_data_per_element_ + offsetData_);
     }
 
+    double tagFrequencyScore(const std::vector<std::string>& tags, const int& level)
+    {
+        double frequencySum = 0.0, maxFrequency = tag_index.maxLevelFrequency(level);
+
+        for (const std::string& tag : tags)
+        {
+            frequencySum += tag_index.frequency(tag, level) / maxFrequency;
+        }
+
+        return frequencySum / tags.size();
+    }
 
     int getRandomLevel(double reverse_size) {
         std::uniform_real_distribution<double> distribution(0.0, 1.0);
         double r = -log(distribution(level_generator_)) * reverse_size;
         return (int) r;
+    }
+
+    int tagBasedLevel(const std::vector<std::string>& tags)
+    {
+        if (tags.empty() || tag_index.size() == 0)
+        {
+            return std::max(getRandomLevel(mult_), maxlevel_);
+        }
+
+        for (const std::string& tag : tags)
+        {
+            if (!tag_index.exists(tag))
+            {
+                return std::max(getRandomLevel(mult_), maxlevel_);
+            }
+        }
+
+        int level = maxlevel_;
+
+        for (; level > 0; level--)
+        {
+            double random = static_cast<double>(distr(gen)) / distr.max();
+            double score = tagFrequencyScore(tags, level);
+
+            if (random >= score)
+            {
+                break;
+            }
+        }
+
+        return std::max(level, getRandomLevel(mult_));
     }
 
     size_t getMaxElements() {
@@ -725,6 +778,7 @@ public:
         writeBinaryPOD(output, M_);
         writeBinaryPOD(output, mult_);
         writeBinaryPOD(output, ef_construction_);
+        writeBinaryPOD(output, adaptive);
 
         output.write(data_level0_memory_, cur_element_count * size_data_per_element_);
 
@@ -771,6 +825,7 @@ public:
         readBinaryPOD(input, M_);
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
+        readBinaryPOD(input, adaptive);
 
         data_size_ = s->get_data_size();
         fstdistfunc_ = s->get_dist_func();
@@ -1209,7 +1264,7 @@ public:
         }
 
         std::unique_lock <std::mutex> lock_el(link_list_locks_[cur_c]);
-        int curlevel = getRandomLevel(mult_);
+        int curlevel = adaptive ? tagBasedLevel(tags) : getRandomLevel(mult_);
         if (level > 0)
             curlevel = level;
 
