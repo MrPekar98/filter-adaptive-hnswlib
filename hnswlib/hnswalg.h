@@ -792,10 +792,6 @@ public:
             }
         }
 
-        // throw exception if it either corrupted or old index
-        if (input.tellg() != total_filesize)
-            throw std::runtime_error("Index seems to be corrupted or unsupported");
-
         input.clear();
         /// Optional check end
 
@@ -1296,7 +1292,6 @@ public:
         return cur_c;
     }
 
-    // TODO: Use the tags
     std::priority_queue<std::pair<dist_t, labeltype >>
     searchKnn(const void *query_data, size_t k, const std::vector<std::string>& tags, BaseFilterFunctor* isIdAllowed = nullptr) const {
         std::priority_queue<std::pair<dist_t, labeltype >> result;
