@@ -16,4 +16,5 @@ evaluation/*.ttl
 evaluation/data.txt
 evaluation/data_small.txt
 evaluation/indexes/
-evaluation/index_postfilter_baseline
+evaluation/results/
+evaluation/index_baselines

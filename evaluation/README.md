@@ -48,6 +48,13 @@ We allow our adaptive HNSW index to adapt to the query workload, which results i
 Now, construct the baseline indexes and store them on disk with the following commands.
 
 ```bash
-g++ index_postfilter_baseline.cpp -o index_postfilter_baseline -I ../hnswlib/
-./index_postfilter_baseline
+g++ index_baselines.cpp -o index_baselines -I ../hnswlib/
+./index_baselines
+```
+
+Now, build the evaluation scripts for the baselines and execute them to obtain the upper and lower performance bounds.
+
+```bash
+g++ evaluate_postfilter_baselines.cpp -o evaluate_postfilter_baselines -I ../hnswlib/
+./evaluate_postfilter_baseline
 ```
