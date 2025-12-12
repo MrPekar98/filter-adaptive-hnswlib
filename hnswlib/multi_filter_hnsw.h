@@ -20,46 +20,61 @@ namespace hnswlib
 		size_t max_elements, M, ef_construction, random_seed;
 		std::unordered_map<std::string, unsigned> lookup;
 		std::vector<HierarchicalNSW<dist_t>*> indexes;
+		std::unordered_set<std::string> allowedTags;
 
 	public:
-		explicit MultiIndexHNSW(SpaceInterface<dist_t> *s)
+		explicit MultiIndexHNSW(SpaceInterface<dist_t> *s, const std::unordered_set<std::string>& allowedTags)
 			: s(s), nmslib(false), max_elements(max_elements), allow_replace_deleted(false),
-				M(16), ef_construction(200), random_seed(100)
-		{}
+				M(16), ef_construction(200), random_seed(100), allowedTags(allowedTags)
+		{
+			initIndexes();
+		}
 
 		MultiIndexHNSW(
 			SpaceInterface<dist_t> *s,
             const std::string &location,
+            const std::unordered_set<std::string>& allowedTags,
             bool nmslib = false,
             size_t max_elements = 0,
             bool allow_replace_deleted = false)
 			: s(s), location(s), nmslib(nmslib), max_elements(max_elements), allow_replace_deleted(allow_replace_deleted),
-				M(16), ef_construction(200), random_seed(100)
-		{}
+				M(16), ef_construction(200), random_seed(100), allowedTags(allowedTags)
+		{
+			initIndexes();
+		}
 
 		MultiIndexHNSW(
 			SpaceInterface<dist_t> *s,
+			const std::unordered_set<std::string>& allowedTags,
             size_t max_elements,
             size_t M = 16,
             size_t ef_construction = 200,
             size_t random_seed = 100,
             bool allow_replace_deleted = false)
 			: s(s), nmslib(false), max_elements(max_elements), allow_replace_deleted(allow_replace_deleted),
-				M(M), ef_construction(ef_construction), random_seed(random_seed)
-		{}
+				M(M), ef_construction(ef_construction), random_seed(random_seed), allowedTags(allowedTags)
+		{
+			initIndexes();
+		}
+
+		void initIndexes()
+		{
+			for (const std::string& tag : allowedTags)
+			{
+				lookup.insert({tag, indexes.size()});
+				indexes.push_back(new HierarchicalNSW<dist_t>(s, max_elements, M, ef_construction, random_seed, allow_replace_deleted));
+			}
+		}
 
 		void addPoint(const void *datapoint, labeltype label, const std::vector<std::string>& tags, bool replace_deleted = false)
 		{
 			for (const std::string& tag : tags)
 			{
-				if (lookup.find(tag) == lookup.end())
+				if (allowedTags.find(tag) != allowedTags.end())
 				{
-					lookup.insert({tag, indexes.size()});
-					indexes.push_back(new HierarchicalNSW<dist_t>(s, max_elements, M, ef_construction, random_seed, allow_replace_deleted));
+					unsigned index = lookup[tag];
+					indexes[index]->addPoint(datapoint, label, {}, replace_deleted);
 				}
-
-				unsigned index = lookup[tag];
-				indexes[index]->addPoint(datapoint, label, {}, replace_deleted);
 			}
 		}
 
