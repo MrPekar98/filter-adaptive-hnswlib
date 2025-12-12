@@ -1268,6 +1268,15 @@ public:
         if (level > 0)
             curlevel = level;
 
+        for (const std::string& tag : tags)
+        {
+            if (tag_index.frequency(tag, maxlevel_))
+            {
+                curlevel = std::max(maxlevel_, curlevel);
+                break;
+            }
+        }
+
         element_levels_[cur_c] = curlevel;
 
         std::unique_lock <std::mutex> templock(global);

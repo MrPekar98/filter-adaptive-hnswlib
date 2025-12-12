@@ -269,12 +269,7 @@ namespace hnswlib
 
         [[nodiscard]] unsigned frequency(const std::string& tag, unsigned level) const
         {
-            if (level >= levels)
-            {
-                throw std::invalid_argument("Level value too great");
-            }
-
-            else if (!exists(tag))
+            if (level >= levels || !exists(tag))
             {
                 return 0;
             }
