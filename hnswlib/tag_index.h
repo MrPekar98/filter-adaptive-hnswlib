@@ -279,8 +279,16 @@ namespace hnswlib
                 return 0;
             }
 
-            tag_type tagId = inverted.at(tag);
-            return levelTagFrequency.at(level).at(tagId);
+            try
+            {
+                tag_type tagId = inverted.at(tag);
+                return levelTagFrequency.at(level).at(tagId);
+            }
+
+            catch (const std::out_of_range& exc)
+            {
+                return 0;
+            }
         }
 
         [[nodiscard]] unsigned maxLevelFrequency(unsigned level)
