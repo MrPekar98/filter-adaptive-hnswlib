@@ -10,7 +10,7 @@
 
 using namespace hnswlib;
 
-std::unordered_set<std::string> readQueryTags(const std::queryDir)
+std::unordered_set<std::string> readQueryTags(const std::string& queryDir)
 {
     std::unordered_set<std::string> tags;
 
