@@ -1,5 +1,6 @@
 #include <postfilter_hnsw.h>
 #include <multi_filter_hnsw.h>
+#include <hnswalg.h>
 #include <string>
 #include <filesystem>
 #include <fstream>
@@ -11,7 +12,8 @@ using namespace hnswlib;
 int main()
 {
     std::string dataFile = "data_small.txt", indexDir = "indexes/", postfilterIndexFile = indexDir + "postfilter_index.idx",
-        multiIndexIndexFile = indexDir + "multi_index_index.idx", mappingFile = indexDir + "baseline_mappings.txt", line;
+        multiIndexIndexFile = indexDir + "multi_index_index.idx", adaptiveIndexFile = "adaptive_index.idx",
+        mappingFile = indexDir + "baseline_mappings.txt", line;
 
     if (!std::filesystem::exists(indexDir))
     {
@@ -23,6 +25,7 @@ int main()
     InnerProductSpace space(dimension);
     PostfilterHNSW<float> postfilterHnsw(&space, entries);
     MultiIndexHNSW<float> multiIndexHnsw(&space, entries);
+    HierarchicalNSW<float> adaptiveHnsw(&space, entries, 16, 200, 100, false, true);
     std::ifstream stream(dataFile);
     std::ofstream mappingStream(mappingFile);
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
@@ -62,6 +65,7 @@ int main()
         mappingStream << count << "=" << uri << "\n";
         postfilterHnsw.addPoint(embedding, count, tags);
         multiIndexHnsw.addPoint(embedding, count, tags);
+        adaptiveHnsw.addPoint(embedding, count, tags);
 
         if (count++ % 1000 == 0)
         {
@@ -75,6 +79,7 @@ int main()
     std::cout << "Done loading index\nSaving on disk..." << std::endl;
     postfilterHnsw.saveIndex(postfilterIndexFile);
     multiIndexHnsw.saveIndex(multiIndexIndexFile);
+    adaptiveHnsw.saveIndex(adaptiveIndexFile);
     std::cout << "Done" << std::endl;
 
     return 0;
