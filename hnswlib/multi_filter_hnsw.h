@@ -140,7 +140,7 @@ namespace hnswlib
 			{
 				HierarchicalNSW<dist_t> hnsw(s);
 				hnsw.loadIndex(location + "." + std::to_string(index), s, max_elements_i);
-				lookup.insert({tag, index});
+				lookup.insert({tag, index++});
 				indexes.push_back(&hnsw);
 			}
 		}
