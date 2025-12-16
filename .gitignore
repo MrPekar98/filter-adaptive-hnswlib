@@ -18,3 +18,4 @@ evaluation/data_small.txt
 evaluation/indexes/
 evaluation/results/
 evaluation/index_baselines
+evaluation/evaluate_baselines
