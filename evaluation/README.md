@@ -55,6 +55,6 @@ g++ index_baselines.cpp -o index_baselines -I ../hnswlib/
 Now, build the evaluation scripts for the baselines and execute them to obtain the upper and lower performance bounds.
 
 ```bash
-g++ evaluate_postfilter_baselines.cpp -o evaluate_postfilter_baselines -I ../hnswlib/
-./evaluate_postfilter_baseline
+g++ evaluate_baselines.cpp -o evaluate_baselines -I ../hnswlib/
+./evaluate_baselines
 ```

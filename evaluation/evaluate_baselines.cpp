@@ -118,6 +118,7 @@ int main()
     std::cout << "Loading indexes\n" << std::endl;
     postfilterBaseline.loadIndex("indexes/postfilter_index.idx", &space, max_elements);
     multiIndexBaseline.loadIndex("indexes/multi_index_index.idx", &space, max_elements);
+    adaptiveHnsw.loadIndex("indexes/adaptive_index.idx", &space, max_elements);
 
     if (!std::filesystem::exists(resultDir))
     {
