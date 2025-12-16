@@ -11,15 +11,24 @@ namespace hnswlib
     class RelationshipGraph
     {
     private:
-        const std::unordered_map<tag_type, std::string>& lookup;
-        const std::unordered_map<std::string, tag_type>& inverted;
+        std::unordered_map<tag_type, std::string>& lookup;
+        std::unordered_map<std::string, tag_type>& inverted;
         std::unordered_map<tag_type, std::unordered_set<tag_type>> adjMatrix;
 
     public:
-        RelationshipGraph(const std::unordered_map<tag_type, std::string>& lookup,
-            const std::unordered_map<std::string, tag_type>& inverted)
+        RelationshipGraph(std::unordered_map<tag_type, std::string>& lookup,
+            std::unordered_map<std::string, tag_type>& inverted)
             : lookup(lookup), inverted(inverted)
         {}
+
+        RelationshipGraph& operator=(const RelationshipGraph& other)
+        {
+            lookup = other.lookup;
+            inverted = other.inverted;
+            adjMatrix = other.adjMatrix;
+
+            return *this;
+        }
 
         void relate(const std::unordered_set<tag_type>& tagIds) noexcept
         {

@@ -23,7 +23,7 @@ namespace hnswlib
 		std::unordered_set<std::string> allowedTags;
 
 	public:
-		explicit MultiIndexHNSW(SpaceInterface<dist_t> *s, const std::unordered_set<std::string>& allowedTags)
+		MultiIndexHNSW(SpaceInterface<dist_t> *s, const std::unordered_set<std::string>& allowedTags)
 			: s(s), nmslib(false), max_elements(max_elements), allow_replace_deleted(false),
 				M(16), ef_construction(200), random_seed(100), allowedTags(allowedTags)
 		{
@@ -138,10 +138,9 @@ namespace hnswlib
 
 			while (std::getline(metaStream, tag))
 			{
-				HierarchicalNSW<dist_t> hnsw(s);
-				hnsw.loadIndex(location + "." + std::to_string(index), s, max_elements_i);
+                indexes.push_back(new HierarchicalNSW<dist_t>(s));
+                indexes[index].loadIndex(location + "." + std::to_string(index), s, max_elements_i);
 				lookup.insert({tag, index++});
-				indexes.push_back(&hnsw);
 			}
 		}
 	};
