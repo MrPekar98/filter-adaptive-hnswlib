@@ -40,6 +40,7 @@ We use two HNSW setup variants as baselines:
 
 1. Full HNSW index that retrieves too large result sets and postfilters results according to the query filters. This is supposedly the worst performing index, since it does not consider filter information in the index construction.
 2. One HNSW index per query filter. This builds the best performing HNSW indexes for each query filter.
+3. Our adaptive HNSW index, whose ranking, memory, and runtime performance should be in between the two previous baselines.
 
 In our experiments, we measure the performance of our adaptive HNSW in 3 dimensions: ranking quality, runtime, and memory.
 Hypothetically, our adaptive HNSW index improves the ranking quality of a single HNSW index with postfiltering and improves at the same time the memory consumption from using multiple HNSW indexes to support all filter forms for filtering during vector search.
@@ -52,9 +53,16 @@ g++ index_baselines.cpp -o index_baselines -I ../hnswlib/
 ./index_baselines
 ```
 
-Now, build the evaluation scripts for the baselines and execute them to obtain the upper and lower performance bounds.
+Now, build the evaluation scripts for the baselines and execute them.
 
 ```bash
 g++ evaluate_baselines.cpp -o evaluate_baselines -I ../hnswlib/
 ./evaluate_baselines
+```
+
+The evaluation script outputs intermediate and final runtimes.
+When all three baselines have been evaluated, we can evaluate the ranking using NDCG.
+
+```bash
+python ndcg.py
 ```
