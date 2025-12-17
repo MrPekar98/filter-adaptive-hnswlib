@@ -80,7 +80,7 @@ namespace hnswlib
 
 		std::priority_queue<std::pair<dist_t, labeltype>> searchKnn(const void *query_data, size_t k, const std::vector<std::string>& tags, BaseFilterFunctor* isIdAllowed = nullptr) const
 		{
-			std::priority_queue<std::pair<dist_t, labeltype>> results;
+			std::priority_queue<std::pair<dist_t, labeltype>> allResults, results;
 			std::unordered_set<labeltype> exists;
 			exists.reserve(k);
 
@@ -98,16 +98,17 @@ namespace hnswlib
 
 						if (exists.find(result.second) == exists.end())
 						{
-							results.push(result);
+							allResults.push(result);
 							exists.insert(result.second);
 						}
 					}
 				}
 			}
 
-			while (results.size() > k)
+			while (results.size() < k)
 			{
-				results.pop();
+				results.push(allResults.top());
+				allResults.pop();
 			}
 
 			return results;
