@@ -359,7 +359,6 @@ public:
         return top_candidates;
     }
 
-
     // bare_bone_search means there is no check for deletions and stop condition is ignored in return of extra performance
     template <bool bare_bone_search = true, bool collect_metrics = false>
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
@@ -517,7 +516,6 @@ public:
         return top_candidates;
     }
 
-
     void getNeighborsByHeuristic2(
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> &top_candidates,
         const size_t M) {
@@ -537,14 +535,18 @@ public:
                 break;
             std::pair<dist_t, tableint> curent_pair = queue_closest.top();
             dist_t dist_to_query = -curent_pair.first;
+            std::vector<std::string> queryTags = tag_index.get(curent_pair.second);
             queue_closest.pop();
             bool good = true;
 
             for (std::pair<dist_t, tableint> second_pair : return_list) {
+                std::vector<std::string> candidateTags = tag_index.get(second_pair.second);
+                double weight = tag_index.tagsSimilarity(queryTags, candidateTags);
                 dist_t curdist =
                         fstdistfunc_(getDataByInternalId(second_pair.second),
                                         getDataByInternalId(curent_pair.second),
                                         dist_func_param_);
+                curdist *= 1 / (1 + weight);
                 if (curdist < dist_to_query) {
                     good = false;
                     break;
@@ -560,26 +562,21 @@ public:
         }
     }
 
-
     linklistsizeint *get_linklist0(tableint internal_id) const {
         return (linklistsizeint *) (data_level0_memory_ + internal_id * size_data_per_element_ + offsetLevel0_);
     }
-
 
     linklistsizeint *get_linklist0(tableint internal_id, char *data_level0_memory_) const {
         return (linklistsizeint *) (data_level0_memory_ + internal_id * size_data_per_element_ + offsetLevel0_);
     }
 
-
     linklistsizeint *get_linklist(tableint internal_id, int level) const {
         return (linklistsizeint *) (linkLists_[internal_id] + (level - 1) * size_links_per_element_);
     }
 
-
     linklistsizeint *get_linklist_at_level(tableint internal_id, int level) const {
         return level == 0 ? get_linklist0(internal_id) : get_linklist(internal_id, level);
     }
-
 
     tableint mutuallyConnectNewElement(
         const void *data_point,
@@ -706,7 +703,6 @@ public:
 
         return next_closest_entry_point;
     }
-
 
     void resizeIndex(size_t new_max_elements) {
         if (new_max_elements < cur_element_count)
