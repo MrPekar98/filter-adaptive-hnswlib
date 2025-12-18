@@ -232,9 +232,14 @@ namespace hnswlib
 
         [[nodiscard]] std::vector<std::string> get(const T& internalId) const
         {
-            if (internalId < 0 || internalId >= count)
+            if (internalId < 0)
             {
                 throw std::runtime_error("Invalid internal ID");
+            }
+
+            else if (internalId > count)
+            {
+                return {};
             }
 
             tag_type* internalTags = tags[internalId];
