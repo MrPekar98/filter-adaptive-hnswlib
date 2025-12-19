@@ -535,18 +535,18 @@ public:
                 break;
             std::pair<dist_t, tableint> curent_pair = queue_closest.top();
             dist_t dist_to_query = -curent_pair.first;
-            std::vector<std::string> queryTags = tag_index.get(curent_pair.second);
+            //std::vector<std::string> queryTags = tag_index.get(curent_pair.second);
             queue_closest.pop();
             bool good = true;
 
             for (std::pair<dist_t, tableint> second_pair : return_list) {
-                std::vector<std::string> candidateTags = tag_index.get(second_pair.second);
-                double weight = tag_index.tagsSimilarity(queryTags, candidateTags);
+                //std::vector<std::string> candidateTags = tag_index.get(second_pair.second);
+                //double weight = tag_index.tagsSimilarity(queryTags, candidateTags);
                 dist_t curdist =
                         fstdistfunc_(getDataByInternalId(second_pair.second),
                                         getDataByInternalId(curent_pair.second),
                                         dist_func_param_);
-                curdist *= 1 / (1 + weight);
+                //curdist *= 1 / (1 + weight);
                 if (curdist < dist_to_query) {
                     good = false;
                     break;
