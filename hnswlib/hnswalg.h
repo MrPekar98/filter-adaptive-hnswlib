@@ -1383,7 +1383,7 @@ public:
                         currObj = cand;
                         changed = true;
 
-                        /*if (tags.empty()) {
+                        if (tags.empty()) {
                             currTagObj = cand;
                         } else {
                             std::vector<std::string> nodeTags = tag_index.get(cand);
@@ -1394,7 +1394,7 @@ public:
                                     break;
                                 }
                             }
-                        }*/
+                        }
                     }
                 }
             }
