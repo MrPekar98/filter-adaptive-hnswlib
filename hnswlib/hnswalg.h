@@ -1477,7 +1477,6 @@ public:
         return result;
     }
 
-
     void checkIntegrity() {
         int connections_checked = 0;
         std::vector <int > inbound_connections_num(cur_element_count, 0);
@@ -1507,6 +1506,64 @@ public:
             std::cout << "Min inbound: " << min1 << ", Max inbound:" << max1 << "\n";
         }
         std::cout << "integrity ok, checked " << connections_checked << " connections\n";
+    }
+
+    void dumpLevelDistribution(const std::string& location)
+    {
+        std::unordered_map<int, std::unordered_set<int>> distribution;
+        int id = 0;
+        std::vector<std::string> entryTags = tag_index.get(enterpoint_node_);
+        std::ofstream file(location);
+        file << "Entry node tags:\n";
+
+        for (const std::string& tag : entryTags)
+        {
+            file << tag << "\n";
+        }
+
+        file << "\n";
+
+        for (const int& level : element_levels_)
+        {
+            if (distribution.find(level) == distribution.end())
+            {
+                distribution.insert(level, {});
+            }
+
+            distribution[level].insert(id++);
+        }
+
+        for (int level = 0; distribution.find(level) != distribution.end(); level++)
+        {
+            std::unordered_map<std::string, int> tags;
+            file << "Nodes in level " << level << ": " << distribution[level].size() << "\n";
+            file << "Tag distribution in level " << level << "\n";
+
+            for (const int& id : distribution[level])
+            {
+                std::vector<std::string> idTags = tag_index.get(id);
+
+                for (const std::string& tag : idTags)
+                {
+                    if (tags.find(tag) == tags.end())
+                    {
+                        tags.insert({tag, 0});
+                    }
+
+                    tags[tag]++;
+                }
+            }
+
+            for (const auto& pair : tags)
+            {
+                file << pair.first << "," << pair.second << "\n";
+            }
+
+            file << "\n";
+        }
+
+        file.flush();
+        file.close();
     }
 };
 }  // namespace hnswlib
