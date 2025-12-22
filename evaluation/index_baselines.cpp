@@ -116,6 +116,7 @@ int main()
     postfilterHnsw.saveIndex(postfilterIndexFile);
     multiIndexHnsw.saveIndex(multiIndexIndexFile);
     adaptiveHnsw.saveIndex(adaptiveIndexFile);
+    adaptiveHnsw.dumpLevelDistribution("tag_distribution_dump.txt");
     std::cout << "Done" << std::endl;
 
     return 0;

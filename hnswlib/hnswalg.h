@@ -1527,7 +1527,7 @@ public:
         {
             if (distribution.find(level) == distribution.end())
             {
-                distribution.insert(level, {});
+                distribution.insert({level, {}});
             }
 
             distribution[level].insert(id++);
