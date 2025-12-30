@@ -73,6 +73,7 @@ public:
 
     TagIndex<tableint> tag_index;
     bool adaptive;
+    std::unordered_map<std::string, tableint> tagAmbassadors;
     std::mt19937 gen;
     std::uniform_int_distribution<> distr;
 
@@ -155,7 +156,6 @@ public:
         revSize_ = 1.0 / mult_;
     }
 
-
     ~HierarchicalNSW() {
         clear();
     }
@@ -174,7 +174,6 @@ public:
         tag_index.clear();
     }
 
-
     struct CompareByFirst {
         constexpr bool operator()(std::pair<dist_t, tableint> const& a,
             std::pair<dist_t, tableint> const& b) const noexcept {
@@ -182,11 +181,9 @@ public:
         }
     };
 
-
     void setEf(size_t ef) {
         ef_ = ef;
     }
-
 
     inline std::mutex& getLabelOpMutex(labeltype label) const {
         // calculate hash
@@ -194,23 +191,19 @@ public:
         return label_op_locks_[lock_id];
     }
 
-
     inline labeltype getExternalLabel(tableint internal_id) const {
         labeltype return_label;
         memcpy(&return_label, (data_level0_memory_ + internal_id * size_data_per_element_ + label_offset_), sizeof(labeltype));
         return return_label;
     }
 
-
     inline void setExternalLabel(tableint internal_id, labeltype label) const {
         memcpy((data_level0_memory_ + internal_id * size_data_per_element_ + label_offset_), &label, sizeof(labeltype));
     }
 
-
     inline labeltype *getExternalLabeLp(tableint internal_id) const {
         return (labeltype *) (data_level0_memory_ + internal_id * size_data_per_element_ + label_offset_);
     }
-
 
     inline char *getDataByInternalId(tableint internal_id) const {
         return (data_level0_memory_ + internal_id * size_data_per_element_ + offsetData_);
@@ -241,7 +234,7 @@ public:
             return std::max(getRandomLevel(mult_), maxlevel_);
         }
 
-        for (const std::string& tag : tags)
+        for (const std::string& tag : tags) // This loop ensures that every newly introduced tag will be in the highest layer
         {
             if (!tag_index.exists(tag))
             {
@@ -789,7 +782,6 @@ public:
         output.close();
     }
 
-
     void loadIndex(const std::string &location, SpaceInterface<dist_t> *s, size_t max_elements_i = 0) {
         std::ifstream input(location, std::ios::binary);
 
@@ -896,7 +888,6 @@ public:
         return;
     }
 
-
     template<typename data_t>
     std::vector<data_t> getDataByLabel(labeltype label) const {
         // lock all operations with element by label
@@ -921,7 +912,6 @@ public:
         return data;
     }
 
-
     /*
     * Marks an element with the given label deleted, does NOT really change the current graph.
     */
@@ -939,7 +929,6 @@ public:
 
         markDeletedInternal(internalId);
     }
-
 
     /*
     * Uses the last 16 bits of the memory for the linked list size to store the mark,
@@ -959,7 +948,6 @@ public:
             throw std::runtime_error("The requested to delete element is already deleted");
         }
     }
-
 
     /*
     * Removes the deleted mark of the node, does NOT really change the current graph.
@@ -982,8 +970,6 @@ public:
         unmarkDeletedInternal(internalId);
     }
 
-
-
     /*
     * Remove the deleted mark of the node.
     */
@@ -1002,7 +988,6 @@ public:
         }
     }
 
-
     /*
     * Checks the first 16 bits of the memory to see if the element is marked deleted.
     */
@@ -1020,7 +1005,6 @@ public:
     void setListCount(linklistsizeint * ptr, unsigned short int size) const {
         *((unsigned short int*)(ptr))=*((unsigned short int *)&size);
     }
-
 
     /*
     * Adds point. Updates the point if it is already in the index.
@@ -1065,7 +1049,6 @@ public:
             updatePoint(data_point, internal_id_replaced, 1.0);
         }
     }
-
 
     void updatePoint(const void *dataPoint, tableint internalId, float updateNeighborProbability) {
         // update the feature vector associated with existing point with new vector
@@ -1145,7 +1128,6 @@ public:
         repairConnectionsForUpdate(dataPoint, entryPointCopy, internalId, elemLevel, maxLevelCopy);
     }
 
-
     void repairConnectionsForUpdate(
         const void *dataPoint,
         tableint entryPointInternalId,
@@ -1213,7 +1195,6 @@ public:
         }
     }
 
-
     std::vector<tableint> getConnectionsWithLock(tableint internalId, int level) {
         std::unique_lock <std::mutex> lock(link_list_locks_[internalId]);
         unsigned int *data = get_linklist_at_level(internalId, level);
@@ -1223,7 +1204,6 @@ public:
         memcpy(result.data(), ll, size * sizeof(tableint));
         return result;
     }
-
 
     tableint addPoint(const void *data_point, labeltype label, const std::vector<std::string>& tags, int level) {
         tableint cur_c = 0;
@@ -1245,7 +1225,7 @@ public:
                     unmarkDeletedInternal(existingInternalId);
                 }
                 updatePoint(data_point, existingInternalId, 1.0);
-                tag_index.insert(existingInternalId, tags, element_levels_[existingInternalId]);
+                //tag_index.insert(existingInternalId, tags, element_levels_[existingInternalId]);
 
                 return existingInternalId;
             }
@@ -1261,15 +1241,30 @@ public:
 
         std::unique_lock <std::mutex> lock_el(link_list_locks_[cur_c]);
         int curlevel = adaptive ? tagBasedLevel(tags) : getRandomLevel(mult_);
+        tableint skipNode = -1;
+
         if (level > 0)
             curlevel = level;
 
         for (const std::string& tag : tags)
         {
-            if (tag_index.frequency(tag, maxlevel_))
+            if (tagAmbassadors.find(tag) == tagAmbassadors.end())
             {
-                curlevel = std::max(maxlevel_, curlevel);
-                break;
+                tagAmbassadors.insert({tag, cur_c});
+                skipNode = cur_c;
+            }
+        }
+
+        if (curlevel > maxlevel_) // If this is a new highest layer, re-insert old nodes, such that this highest layer contains every tag
+        {
+            for (const auto& pair : tagAmbassadors)
+            {
+                if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
+                {
+                    void* data = getDataByInternalId(pair.second);
+                    labeltype label = getExternalLabel(pair.second);
+                    addPoint(data, getExternalLabel(), label, curlevel);
+                }
             }
         }
 
