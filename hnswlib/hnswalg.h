@@ -1263,7 +1263,7 @@ public:
                 {
                     void* data = getDataByInternalId(pair.second);
                     labeltype label = getExternalLabel(pair.second);
-                    addPoint(data, getExternalLabel(), label, curlevel);
+                    addPoint(data, label, {}, curlevel);
                 }
             }
         }
