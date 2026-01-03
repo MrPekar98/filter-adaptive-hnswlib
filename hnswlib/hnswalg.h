@@ -5,7 +5,7 @@
 #include <atomic>
 #include <random>
 #include <cstdlib>
-#include <cassert>
+#include <assert>
 #include <unordered_set>
 #include <list>
 #include <memory>
@@ -1261,9 +1261,7 @@ public:
             {
                 if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
                 {
-                    void* data = getDataByInternalId(pair.second);
-                    labeltype label = getExternalLabel(pair.second);
-                    addPoint(data, label, {}, curlevel);
+                    moveUp(pair.second, curlevel);
                 }
             }
         }
@@ -1345,6 +1343,87 @@ public:
         }
         tag_index.insert(cur_c, tags, curlevel);
         return cur_c;
+    }
+
+    void moveUp(tableint id, int newLevel)
+    {
+        if (newLevel > maxlevel_)
+        {
+            throw std::runtime_error("Moving to level that does not exist");
+        }
+
+        int prevLevel = element_levels_[id];
+
+        if (prevLevel <= newLevel)
+        {
+            throw std::runtime_error("New level must be greater than previous level");
+        }
+
+        element_levels_[id] = newLevel;
+        char* linkedListsCopy = (char*) realloc(linkLists_, size_links_per_element_ * newLevel + 1);
+
+        if (!linkedListsCopy)
+        {
+            throw std::runtime_error("Failed allocating node being move up to higher levels");
+        }
+
+        linkLists_[id] = linkedListsCopy;
+        memset(linkLists_[id] + size_links_per_element_ * prevLevel + 1, 0, size_links_per_element_ * (newLevel - prevLevel) + 1);
+
+        void* curData = getDataByInternalId(id);
+        tableint curObj = enterpoint_node_, enterpointCopy = enterpoint_node_;
+        dist_t curDist = fstdistfunc_(curData, getDataByInternalId(curObj), dist_func_param_);
+
+        for (int level = maxlevel_; level > newLevel; level--)
+        {
+            bool changed = true;
+
+            while (changed)
+            {
+                changed = false;
+                unsigned int *data = get_linklist(curObj, level);
+                int size = getListCount(data);
+                tableint *datal = (tableint *) (data + 1);
+
+                for (int i = 0; i < size; i++)
+                {
+                    tableint cand = datal[i];
+
+                    if (cand < 0 || cand > max_elements_)
+                    {
+                        throw std::runtime_error("cand error");
+                    }
+
+                    dist_t d = fstdistfunc_(curData, getDataByInternalId(cand), dist_func_param_);
+
+                    if (d < curDist) {
+                        curDist = d;
+                        curObj = cand;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        bool epDeleted = isMarkedDeleted(enterpointCopy);
+
+        for (int level = newLevel; level > prevLevel; level--)
+        {
+            std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates = searchBaseLayer(
+                        curObj, curData, level);
+
+            if (epDeleted)
+            {
+                top_candidates.emplace(fstdistfunc_(curData, getDataByInternalId(enterpointCopy), dist_func_param_), enterpointCopy);
+
+                if (top_candidates.size() > ef_construction_)
+                {
+                    top_candidates.pop();
+                }
+            }
+
+            curObj = mutuallyConnectNewElement(curData, id, top_candidates, level, false);
+        }
     }
 
     std::priority_queue<std::pair<dist_t, labeltype >>
@@ -1509,6 +1588,7 @@ public:
         int id = 0;
         std::vector<std::string> entryTags = tag_index.get(enterpoint_node_);
         std::ofstream file(location);
+        file << "Unique tags: " << tagAmbassadors.size() << "\n";
         file << "Entry node tags:\n";
 
         for (const std::string& tag : entryTags)

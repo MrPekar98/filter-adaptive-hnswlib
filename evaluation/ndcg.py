@@ -74,7 +74,7 @@ if __name__ == "__main__":
         print('Adaptive baseline')
 
         for query in os.listdir(path):
-            query_file = path + query_file
+            query_file = path + query
             adaptive_query_file = adaptive_result_dir + query_type + '/' + query
             multifilter_ranking = read_ranking(query_file)
             adaptive_ranking = read_ranking(adaptive_query_file)
