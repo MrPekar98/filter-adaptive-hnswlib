@@ -5,7 +5,7 @@
 #include <atomic>
 #include <random>
 #include <cstdlib>
-#include <assert>
+#include <cassert>
 #include <unordered_set>
 #include <list>
 #include <memory>
@@ -1255,17 +1255,6 @@ public:
             }
         }
 
-        if (curlevel > maxlevel_) // If this is a new highest layer, re-insert old nodes, such that this highest layer contains every tag
-        {
-            for (const auto& pair : tagAmbassadors)
-            {
-                if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
-                {
-                    moveUp(pair.second, curlevel);
-                }
-            }
-        }
-
         element_levels_[cur_c] = curlevel;
 
         std::unique_lock <std::mutex> templock(global);
@@ -1340,27 +1329,45 @@ public:
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;
             maxlevel_ = curlevel;
+            lock_el.unlock();
+
+            for (const auto& pair : tagAmbassadors) // We now have a new highest layer, so re-insert old nodes, such that this highest layer contains every tag
+            {
+                if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
+                {
+                    moveUp(pair.second, curlevel, enterpoint_node_);
+                    // TODO: The problem is that the addPoint() method will just update (re-compute neighborhood), but not insert it in higher levels as specified by the last argument
+                    // TODO: We might need to introduce a new method to move up nodes to higher levels
+                    // TODO: Alternatively, we keep ambassodors without inserting them, and when we are done indexing, then we insert them into the highest layer
+                }
+            }
         }
+
         tag_index.insert(cur_c, tags, curlevel);
         return cur_c;
     }
 
-    void moveUp(tableint id, int newLevel)
+    void moveUp(tableint id, int newLevel, tableint enterpoint)
     {
         if (newLevel > maxlevel_)
         {
             throw std::runtime_error("Moving to level that does not exist");
         }
 
+        else if (newLevel < 1)
+        {
+            throw std::runtime_error("New level cannot be 0 or negative");
+        }
+
         int prevLevel = element_levels_[id];
 
-        if (prevLevel <= newLevel)
+        if (newLevel <= prevLevel)
         {
             throw std::runtime_error("New level must be greater than previous level");
         }
 
         element_levels_[id] = newLevel;
-        char* linkedListsCopy = (char*) realloc(linkLists_, size_links_per_element_ * newLevel + 1);
+        char* linkedListsCopy = (char*) realloc(linkLists_[id], size_links_per_element_ * newLevel + 1);
 
         if (!linkedListsCopy)
         {
@@ -1368,43 +1375,11 @@ public:
         }
 
         linkLists_[id] = linkedListsCopy;
-        memset(linkLists_[id] + size_links_per_element_ * prevLevel + 1, 0, size_links_per_element_ * (newLevel - prevLevel) + 1);
+        memset(linkLists_[id] + size_links_per_element_ * prevLevel, 0, size_links_per_element_ * (newLevel - prevLevel) + 1);
 
         void* curData = getDataByInternalId(id);
-        tableint curObj = enterpoint_node_, enterpointCopy = enterpoint_node_;
+        tableint curObj = enterpoint, enterpointCopy = enterpoint;
         dist_t curDist = fstdistfunc_(curData, getDataByInternalId(curObj), dist_func_param_);
-
-        for (int level = maxlevel_; level > newLevel; level--)
-        {
-            bool changed = true;
-
-            while (changed)
-            {
-                changed = false;
-                unsigned int *data = get_linklist(curObj, level);
-                int size = getListCount(data);
-                tableint *datal = (tableint *) (data + 1);
-
-                for (int i = 0; i < size; i++)
-                {
-                    tableint cand = datal[i];
-
-                    if (cand < 0 || cand > max_elements_)
-                    {
-                        throw std::runtime_error("cand error");
-                    }
-
-                    dist_t d = fstdistfunc_(curData, getDataByInternalId(cand), dist_func_param_);
-
-                    if (d < curDist) {
-                        curDist = d;
-                        curObj = cand;
-                        changed = true;
-                    }
-                }
-            }
-        }
-
         bool epDeleted = isMarkedDeleted(enterpointCopy);
 
         for (int level = newLevel; level > prevLevel; level--)
