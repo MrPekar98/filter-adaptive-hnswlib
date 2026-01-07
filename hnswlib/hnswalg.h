@@ -1336,9 +1336,6 @@ public:
                 if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
                 {
                     moveUp(pair.second, curlevel, enterpoint_node_);
-                    // TODO: The problem is that the addPoint() method will just update (re-compute neighborhood), but not insert it in higher levels as specified by the last argument
-                    // TODO: We might need to introduce a new method to move up nodes to higher levels
-                    // TODO: Alternatively, we keep ambassodors without inserting them, and when we are done indexing, then we insert them into the highest layer
                 }
             }
         }
@@ -1361,7 +1358,12 @@ public:
 
         int prevLevel = element_levels_[id];
 
-        if (newLevel <= prevLevel)
+        if (prevLevel == newLevel)
+        {
+            return;
+        }
+
+        else if (newLevel < prevLevel)
         {
             throw std::runtime_error("New level must be greater than previous level");
         }
