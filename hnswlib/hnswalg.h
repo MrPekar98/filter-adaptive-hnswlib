@@ -44,6 +44,7 @@ public:
     std::vector<std::mutex> link_list_locks_;
 
     tableint enterpoint_node_{0};
+    std::unordered_map<std::string, tableint> tagEnterpoints;
 
     size_t size_links_level0_{0};
     size_t offsetData_{0}, offsetLevel0_{0}, label_offset_{ 0 };
@@ -73,7 +74,6 @@ public:
 
     TagIndex<tableint> tag_index;
     bool adaptive;
-    std::unordered_map<std::string, tableint> tagAmbassadors;
     std::mt19937 gen;
     std::uniform_int_distribution<> distr;
 
@@ -768,6 +768,7 @@ public:
         writeBinaryPOD(output, mult_);
         writeBinaryPOD(output, ef_construction_);
         writeBinaryPOD(output, adaptive);
+        writeBinaryPOD(output, tagEnterpoints.size());
 
         output.write(data_level0_memory_, cur_element_count * size_data_per_element_);
 
@@ -776,6 +777,12 @@ public:
             writeBinaryPOD(output, linkListSize);
             if (linkListSize)
                 output.write(linkLists_[i], linkListSize);
+        }
+
+        for (const auto& pair : tagEnterpoints) {
+            writeBinaryPOD(output, pair.first.length());
+            output.write(pair.first.c_str(), pair.first.length());
+            writeBinaryPOD(output, pair.second);
         }
 
         tag_index.saveIndex(output);
@@ -798,7 +805,7 @@ public:
         readBinaryPOD(input, max_elements_);
         readBinaryPOD(input, cur_element_count);
 
-        size_t max_elements = max_elements_i;
+        size_t max_elements = max_elements_i, enterpoints;
         if (max_elements < cur_element_count)
             max_elements = max_elements_;
         max_elements_ = max_elements;
@@ -814,6 +821,7 @@ public:
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
         readBinaryPOD(input, adaptive);
+        readBinaryPOD(input, enterpoints);
 
         data_size_ = s->get_data_size();
         fstdistfunc_ = s->get_dist_func();
@@ -880,6 +888,20 @@ public:
                 num_deleted_ += 1;
                 if (allow_replace_deleted_) deleted_elements.insert(i);
             }
+        }
+
+        for (size_t i = 0; i < enterpoints; i++) {
+            size_t tagLength;
+            tableint nodeId;
+            readBinaryPOD(input, tagLength);
+
+            char* cTag = (char*) malloc(tagLength);
+            input.read(cTag, sizeof(char) * tagLength);
+            readBinaryPOD(input, nodeId);
+
+            std::string tag = cTag;
+            tag = tag.substr(0, tagLength);
+            tagEnterpoints.insert({tag, nodeId});
         }
 
         tag_index.loadIndex(input);
@@ -1246,12 +1268,14 @@ public:
         if (level > 0)
             curlevel = level;
 
-        for (const std::string& tag : tags)
+        if (curlevel == maxlevel_)
         {
-            if (tagAmbassadors.find(tag) == tagAmbassadors.end())
+            for (const std::string& tag : tags)
             {
-                tagAmbassadors.insert({tag, cur_c});
-                skipNode = cur_c;
+                if (tagEnterpoints.find(tag) == tagEnterpoints.end())
+                {
+                    tagEnterpoints.insert({tag, cur_c});
+                }
             }
         }
 
@@ -1329,14 +1353,11 @@ public:
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;
             maxlevel_ = curlevel;
-            lock_el.unlock();
+            tagEnterpoints.clear();
 
-            for (const auto& pair : tagAmbassadors) // We now have a new highest layer, so re-insert old nodes, such that this highest layer contains every tag
+            for (const std::string& tag : tags)
             {
-                if (pair.second != skipNode) // Do not "re-insert" the new node before it is actually inserted
-                {
-                    moveUp(pair.second, curlevel, enterpoint_node_);
-                }
+                tagEnterpoints.insert({tag, cur_c});
             }
         }
 
@@ -1408,8 +1429,20 @@ public:
         std::priority_queue<std::pair<dist_t, labeltype >> result;
         if (cur_element_count == 0) return result;
 
-        tableint currObj = enterpoint_node_, currTagObj = -1;
+        tableint currObj = enterpoint_node_;
+        unsigned maxTagFrequency = 0;
         dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+
+        for (const std::string& tag : tags) // Choose the most popular tag, as this should provide the best search-quality performance
+        {
+            unsigned tagFrequency = tag_index.frequency(tag, 0);
+
+            if (tagEnterpoints.find(tag) != tagEnterpoints.end() && tagFrequency > maxTagFrequency)
+            {
+                maxTagFrequency = tagFrequency;
+                currObj = tagEnterpoints.at(tag);
+            }
+        }
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1430,20 +1463,16 @@ public:
                     dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
-                        curdist = d;
-                        currObj = cand;
-                        changed = true;
+                        //curdist = d;
+                        //currObj = cand;
+                        //changed = true;
+                        std::vector<std::string> nodeTags = tag_index.get(cand);
 
-                        if (tags.empty()) {
-                            currTagObj = cand;
-                        } else {
-                            std::vector<std::string> nodeTags = tag_index.get(cand);
+                        for (const std::string& tag : tags) {
 
-                            for (const std::string& tag : tags) {
-                                if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
-                                    currTagObj = cand;
-                                    break;
-                                }
+                            if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
+                                currObj = cand;
+                                break;
                             }
                         }
                     }
@@ -1565,7 +1594,6 @@ public:
         int id = 0;
         std::vector<std::string> entryTags = tag_index.get(enterpoint_node_);
         std::ofstream file(location);
-        file << "Unique tags: " << tagAmbassadors.size() << "\n";
         file << "Entry node tags:\n";
 
         for (const std::string& tag : entryTags)
