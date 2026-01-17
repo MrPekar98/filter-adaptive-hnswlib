@@ -1482,7 +1482,6 @@ public:
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
         bool bare_bone_search = !num_deleted_ && !isIdAllowed;
-        currObj = currTagObj != -1 ? currTagObj : currObj;  // We prioritize closest node satisfying a query filter
         if (bare_bone_search) {
             top_candidates = searchBaseLayerST<true>(
                     currObj, query_data, std::max(ef_, k), tags, isIdAllowed);
