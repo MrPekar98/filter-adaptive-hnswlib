@@ -44,7 +44,7 @@ public:
     std::vector<std::mutex> link_list_locks_;
 
     tableint enterpoint_node_{0};
-    std::unordered_map<std::string, tableint> tagEnterpoints;
+    std::unordered_map<std::string, std::pair<unsigned, tableint>> enterpoints;
 
     size_t size_links_level0_{0};
     size_t offsetData_{0}, offsetLevel0_{0}, label_offset_{ 0 };
@@ -768,7 +768,7 @@ public:
         writeBinaryPOD(output, mult_);
         writeBinaryPOD(output, ef_construction_);
         writeBinaryPOD(output, adaptive);
-        writeBinaryPOD(output, tagEnterpoints.size());
+        writeBinaryPOD(output, enterpoints.size());
 
         output.write(data_level0_memory_, cur_element_count * size_data_per_element_);
 
@@ -779,10 +779,11 @@ public:
                 output.write(linkLists_[i], linkListSize);
         }
 
-        for (const auto& pair : tagEnterpoints) {
+        for (const auto& pair : enterpoints) {
             writeBinaryPOD(output, pair.first.length());
             output.write(pair.first.c_str(), pair.first.length());
-            writeBinaryPOD(output, pair.second);
+            writeBinaryPOD(output, pair.second.first);
+            writeBinaryPOD(output, pair.second.second);
         }
 
         tag_index.saveIndex(output);
@@ -805,7 +806,7 @@ public:
         readBinaryPOD(input, max_elements_);
         readBinaryPOD(input, cur_element_count);
 
-        size_t max_elements = max_elements_i, enterpoints;
+        size_t max_elements = max_elements_i, enterpointNodes;
         if (max_elements < cur_element_count)
             max_elements = max_elements_;
         max_elements_ = max_elements;
@@ -821,7 +822,7 @@ public:
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
         readBinaryPOD(input, adaptive);
-        readBinaryPOD(input, enterpoints);
+        readBinaryPOD(input, enterpointNodes);
 
         data_size_ = s->get_data_size();
         fstdistfunc_ = s->get_dist_func();
@@ -890,18 +891,20 @@ public:
             }
         }
 
-        for (size_t i = 0; i < enterpoints; i++) {
+        for (size_t i = 0; i < enterpointNodes; i++) {
             size_t tagLength;
+            unsigned level;
             tableint nodeId;
             readBinaryPOD(input, tagLength);
 
             char* cTag = (char*) malloc(tagLength);
             input.read(cTag, sizeof(char) * tagLength);
+            readBinaryPOD(input, level);
             readBinaryPOD(input, nodeId);
 
             std::string tag = cTag;
             tag = tag.substr(0, tagLength);
-            tagEnterpoints.insert({tag, nodeId});
+            enterpoints.insert({tag, std::make_pair(level, nodeId)});
         }
 
         tag_index.loadIndex(input);
@@ -1263,18 +1266,25 @@ public:
 
         std::unique_lock <std::mutex> lock_el(link_list_locks_[cur_c]);
         int curlevel = adaptive ? tagBasedLevel(tags) : getRandomLevel(mult_);
-        tableint skipNode = -1;
 
         if (level > 0)
             curlevel = level;
 
-        if (curlevel == maxlevel_)
+        for (const std::string& tag : tags)
         {
-            for (const std::string& tag : tags)
+            if (enterpoints.find(tag) == enterpoints.end())
             {
-                if (tagEnterpoints.find(tag) == tagEnterpoints.end())
+                enterpoints.insert({tag, std::make_pair(curlevel, cur_c)});
+            }
+
+            else
+            {
+                unsigned prevLevel = enterpoints[tag].first;
+
+                if (curlevel > prevLevel)
                 {
-                    tagEnterpoints.insert({tag, cur_c});
+                    enterpoints.erase(tag);
+                    enterpoints.insert({tag, std::make_pair(curlevel, cur_c)});
                 }
             }
         }
@@ -1353,12 +1363,6 @@ public:
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;
             maxlevel_ = curlevel;
-            tagEnterpoints.clear();
-
-            for (const std::string& tag : tags)
-            {
-                tagEnterpoints.insert({tag, cur_c});
-            }
         }
 
         tag_index.insert(cur_c, tags, curlevel);
@@ -1430,21 +1434,23 @@ public:
         if (cur_element_count == 0) return result;
 
         tableint currObj = enterpoint_node_;
-        unsigned maxTagFrequency = 0;
+        unsigned maxTagFrequency = 0, startLevel = maxlevel_;
         dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
         for (const std::string& tag : tags) // Choose the most popular tag, as this should provide the best search-quality performance
         {
             unsigned tagFrequency = tag_index.frequency(tag, 0);
 
-            if (tagEnterpoints.find(tag) != tagEnterpoints.end() && tagFrequency > maxTagFrequency)
+            if (tagFrequency > maxTagFrequency)
             {
+                auto pair = enterpoints.at(tag);
+                currObj = pair.first;
+                startLevel = pair.second;
                 maxTagFrequency = tagFrequency;
-                currObj = tagEnterpoints.at(tag);
             }
         }
 
-        for (int level = maxlevel_; level > 0; level--) {
+        for (int level = startLevel; level > 0; level--) {
             bool changed = true;
             while (changed) {
                 changed = false;
