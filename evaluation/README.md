@@ -34,9 +34,29 @@ Similarly, run the following script to gain insight into the type distribution i
 python query_histogram.py
 ```
 
+### Setup of Baseline
+We setup <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our baseline for filtered vector search.
+First, install the necessary tools.
+
+```bash
+apt install cmake build-essential git libboost-all-dev libomp-dev libmkl-avx2 -y
+```
+
+Clone and build the project.
+
+´´´bash
+git clone https://github.com/YZ-Cai/Unified-Navigating-Graph.git
+cd Unified-Navigating-Graph/
+mkdir build/
+cd build/
+cmake -DCMAKE_BUILD_TYPE=Release ../codes/
+make -j
+cd ..
+´´´
+
 ## Running Experiments
 
-We use two HNSW setup variants as baselines:
+We use two HNSW setup variants as baselines, excluding Rii:
 
 1. Full HNSW index that retrieves too large result sets and postfilters results according to the query filters. This is supposedly the worst performing index, since it does not consider filter information in the index construction.
 2. One HNSW index per query filter. This builds the best performing HNSW indexes for each query filter.
@@ -65,4 +85,14 @@ When all three baselines have been evaluated, we can evaluate the ranking using 
 
 ```bash
 python ndcg.py
+```
+
+### Evaluating External Baselines
+As previously mentioned, we also evaluate <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our external baseline for filtered vector search.
+First, we setup the data.
+
+```bash
+mkdir -p data/dataset_full/
+g++ -o data_to_bin data_to_bin.cpp
+./data_to_bin
 ```
