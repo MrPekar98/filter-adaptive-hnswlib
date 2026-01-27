@@ -1444,8 +1444,8 @@ public:
             if (tagFrequency > maxTagFrequency)
             {
                 auto pair = enterpoints.at(tag);
-                currObj = pair.first;
-                startLevel = pair.second;
+                startLevel = pair.first;
+                currObj = pair.second;
                 maxTagFrequency = tagFrequency;
             }
         }
