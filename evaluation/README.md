@@ -93,6 +93,16 @@ First, we setup the data.
 
 ```bash
 mkdir -p data/dataset_full/
-g++ -o data_to_bin data_to_bin.cpp
+g++ -std=c++17 -o data_to_bin data_to_bin.cpp
 ./data_to_bin
+```
+
+Build the index.
+
+```bash
+mkdir indexes/ung/
+./Unified-Navigating-Graph/build/apps/build_UNG_index \
+    --data_type float --dist_fn L2 --num_threads 32 --max_degree 32 --Lbuild 100 --alpha 1.2 \
+    --base_bin_file data/dataset_full/data.bin --base_label_file data/dataset_full/labels.txt \
+    --index_path_prefix indexed/ung/ --scenario general --num_cross_edges 6
 ```
