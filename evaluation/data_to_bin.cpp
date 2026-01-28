@@ -89,6 +89,9 @@ int main()
         bool isFirst = true;
         std::getline(reader, line);
 
+        std::string vectorString = line;
+        std::istringstream vectorStream(vectorString);
+
         while (std::getline(tagStream, line, ' '))
         {
             if (labelIndex.find(line) == labelIndex.end())
@@ -113,9 +116,6 @@ int main()
         }
 
         label_writer << "\n";
-
-        std::string vectorString = line;
-        std::istringstream vectorStream(vectorString);
 
         while (std::getline(vectorStream, line, ' '))
         {

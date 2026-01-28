@@ -22,3 +22,4 @@ evaluation/evaluate_baselines
 evaluation/tag_distribution_dump.txt
 evaluation/data/
 evaluation/Unified-Navigating-Graph/
+evaluation/data_to_bin
