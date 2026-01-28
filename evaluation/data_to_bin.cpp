@@ -4,15 +4,16 @@
 #include <sstream>
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 int main()
 {
     uint32_t vectors = 32440681, dimension = 200;
     std::string vector_file = "data.txt", binary_file = "data/dataset_full/data.bin";
     std::ifstream reader(vector_file);
-    std::ofstream writer(binary_file), label_writer("data/dataset_full/labels.txt");
+    std::ofstream writer(binary_file), label_writer("data/dataset_full/labels.txt"), label_index_file("data/dataset_full/label_index.txt");
     std::string line;
-    unsigned count = 0, labelCount = 1;
+    unsigned count = 0, labelCount = 2;
     std::unordered_map<std::string, int> labelIndex;
     writer.write(reinterpret_cast<const char*>(&vectors), sizeof(vectors));
     writer.write(reinterpret_cast<const char*>(&dimension), sizeof(dimension));
@@ -25,17 +26,30 @@ int main()
 
         std::string tagString = line;
         std::istringstream tagStream(tagString);
+        bool isFirst = true;
         std::getline(reader, line);
 
         while (std::getline(tagStream, line, ' '))
         {
             if (labelIndex.find(line) == labelIndex.end())
             {
-                labelIndex.insert({line, labelCount++});
+                labelIndex.insert({line, labelCount});
+                label_index_file << labelCount++ << "=" << line << "\n";
+            }
+
+            if (!isFirst)
+            {
+                label_writer << ",";
             }
 
             int id = labelIndex.at(line);
-            label_writer << id << ",";
+            isFirst = false;
+            label_writer << id;
+        }
+
+        if (isFirst) // A dummy label for thise entities that do not have a tag/label
+        {
+            label_writer << 1;
         }
 
         label_writer << "\n";
