@@ -528,18 +528,60 @@ public:
                 break;
             std::pair<dist_t, tableint> curent_pair = queue_closest.top();
             dist_t dist_to_query = -curent_pair.first;
-            //std::vector<std::string> queryTags = tag_index.get(curent_pair.second);
             queue_closest.pop();
             bool good = true;
 
             for (std::pair<dist_t, tableint> second_pair : return_list) {
-                //std::vector<std::string> candidateTags = tag_index.get(second_pair.second);
-                //double weight = tag_index.tagsSimilarity(queryTags, candidateTags);
                 dist_t curdist =
                         fstdistfunc_(getDataByInternalId(second_pair.second),
                                         getDataByInternalId(curent_pair.second),
                                         dist_func_param_);
-                //curdist *= 1 / (1 + weight);
+                if (curdist < dist_to_query) {
+                    good = false;
+                    break;
+                }
+            }
+            if (good) {
+                return_list.push_back(curent_pair);
+            }
+        }
+
+        for (std::pair<dist_t, tableint> curent_pair : return_list) {
+            top_candidates.emplace(-curent_pair.first, curent_pair.second);
+        }
+    }
+
+    void getNeighborsByHeuristic3(
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> &top_candidates,
+        const size_t M) {
+        if (top_candidates.size() < M) {
+            return;
+        }
+
+        std::priority_queue<std::pair<dist_t, tableint>> queue_closest;
+        std::vector<std::pair<dist_t, tableint>> return_list;
+        while (top_candidates.size() > 0) {
+            queue_closest.emplace(-top_candidates.top().first, top_candidates.top().second);
+            top_candidates.pop();
+        }
+
+        while (queue_closest.size()) {
+            if (return_list.size() >= M)
+                break;
+            std::pair<dist_t, tableint> curent_pair = queue_closest.top();
+            dist_t dist_to_query = -curent_pair.first;
+            std::vector<std::string> queryTags = tag_index.get(curent_pair.second);
+            queue_closest.pop();
+            bool good = true;
+
+            for (std::pair<dist_t, tableint> second_pair : return_list) {
+                std::vector<std::string> candidateTags = tag_index.get(second_pair.second);
+                double weight = 1 / (1 + tag_index.tagsSimilarity(queryTags, candidateTags));
+                dist_t curdist =
+                        fstdistfunc_(getDataByInternalId(second_pair.second),
+                                        getDataByInternalId(curent_pair.second),
+                                        dist_func_param_);
+                curdist *= 1 - weight;  // TODO: How do we modify this heuristic function to make sense based on our new weighing strategy?
                 if (curdist < dist_to_query) {
                     good = false;
                     break;
@@ -578,7 +620,7 @@ public:
         int level,
         bool isUpdate) {
         size_t Mcurmax = level ? maxM_ : maxM0_;
-        getNeighborsByHeuristic2(top_candidates, M_);
+        getNeighborsByHeuristic3(top_candidates, M_);
         if (top_candidates.size() > M_)
             throw std::runtime_error("Should be not be more than M_ candidates returned by the heuristic");
 
@@ -668,7 +710,7 @@ public:
                                                 dist_func_param_), data[j]);
                     }
 
-                    getNeighborsByHeuristic2(candidates, Mcurmax);
+                    getNeighborsByHeuristic3(candidates, Mcurmax);
 
                     int indx = 0;
                     while (candidates.size() > 0) {
@@ -1133,7 +1175,7 @@ public:
                 }
 
                 // Retrieve neighbours using heuristic and set connections.
-                getNeighborsByHeuristic2(candidates, layer == 0 ? maxM0_ : maxM_);
+                getNeighborsByHeuristic3(candidates, layer == 0 ? maxM0_ : maxM_);
 
                 {
                     std::unique_lock <std::mutex> lock(link_list_locks_[neigh]);

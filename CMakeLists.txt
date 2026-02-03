@@ -82,7 +82,8 @@ if(HNSWLIB_EXAMPLES)
     add_executable(multivector_search_test tests/cpp/multivector_search_test.cpp)
     target_link_libraries(multivector_search_test hnswlib)
 
-    add_executable(epsilon_search_test tests/cpp/epsilon_search_test.cpp)
+    add_executable(epsilon_search_test tests/cpp/epsilon_search_test.cpp
+            hnswlib/shortest_path.h)
     target_link_libraries(epsilon_search_test hnswlib)
 
     add_executable(test_updates tests/cpp/updates_test.cpp)

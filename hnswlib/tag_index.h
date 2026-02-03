@@ -301,6 +301,7 @@ namespace hnswlib
             return *(maxFrequenciesPerLevel + level);
         }
 
+        // TODO: This needs changing according to the slides using Dijkstra distance aggregation
         [[nodiscard]] double tagsSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const noexcept
         {
             if (tags1.empty() || tags2.empty())
