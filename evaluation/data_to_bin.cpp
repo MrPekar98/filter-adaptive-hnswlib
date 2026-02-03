@@ -1,3 +1,4 @@
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -68,7 +69,7 @@ Query parse(const std::string& queryFile)
 
 int main()
 {
-    uint32_t vectors = 32440681, dimension = 200;
+    uint64_t vectors = 32440681, dimension = 200;
     std::string vector_file = "data.txt", binary_file = "data/dataset_full/data.bin";
     std::ifstream reader(vector_file);
     std::ofstream writer(binary_file), label_writer("data/dataset_full/labels.txt"), label_index_file("data/label_index.txt");

@@ -23,3 +23,7 @@ evaluation/tag_distribution_dump.txt
 evaluation/data/
 evaluation/Unified-Navigating-Graph/
 evaluation/data_to_bin
+evaluation/build/
+evaluation/index_acorn
+evaluation/gen_fvecs
+evaluation/ACORN/

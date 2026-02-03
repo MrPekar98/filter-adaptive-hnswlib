@@ -35,6 +35,7 @@ python query_histogram.py
 ```
 
 ### Setup of Baseline
+#### Unified Navigating Graph
 We setup <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our baseline for filtered vector search.
 First, install the necessary tools.
 
@@ -44,7 +45,7 @@ apt install cmake build-essential git libboost-all-dev libomp-dev libmkl-avx2 -y
 
 Clone and build the project.
 
-´´´bash
+```bash
 git clone https://github.com/YZ-Cai/Unified-Navigating-Graph.git
 cd Unified-Navigating-Graph/
 mkdir build/
@@ -52,7 +53,26 @@ cd build/
 cmake -DCMAKE_BUILD_TYPE=Release ../codes/
 make -j
 cd ..
-´´´
+```
+
+#### ACORN
+
+We setup <a href="https://github.com/guestrin-lab/ACORN/tree/main">ACORN</a> as our baseline for filtered vector search.
+First, install the necessary tools.
+
+```bash
+apt install cmake build-essential git zlib1g-dev libopenblas-dev libomp-dev -y
+```
+
+Then, build ACORN.
+
+```bash
+git clone https://github.com/guestrin-lab/ACORN.git
+cd ACORN/
+cmake -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -B build
+make -C build -j faiss
+cd ../
+```
 
 ## Running Experiments
 
@@ -88,6 +108,7 @@ python ndcg.py
 ```
 
 ### Evaluating External Baselines
+#### Unified Navigating Graph
 As previously mentioned, we also evaluate <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our external baseline for filtered vector search.
 First, we setup the data.
 
@@ -101,8 +122,42 @@ Build the index.
 
 ```bash
 mkdir indexes/ung/
+git clone https://github.com/YZ-Cai/Unified-Navigating-Graph.git
+mkdir Unified-Navigating-Graph/build/
+cd Unified-Navigating-Graph/build/
+make -j
+cd ../../
 ./Unified-Navigating-Graph/build/apps/build_UNG_index \
     --data_type float --dist_fn L2 --num_threads 32 --max_degree 32 --Lbuild 100 --alpha 1.2 \
     --base_bin_file data/dataset_full/data.bin --base_label_file data/dataset_full/labels.txt \
     --index_path_prefix indexed/ung/ --scenario general --num_cross_edges 6
+```
+
+Now, perform filtered vector search.
+
+```bash
+./search_ung.sh
+```
+
+The results can then be found in `results/ung/`.
+
+#### ACORN
+
+As previously mentioned, we also evaluate <a href="https://github.com/guestrin-lab/ACORN/tree/main">ACORN</a> as our external baseline for filtered vector search.
+First, we setup the data.
+
+```bash
+mkdir data/
+g++ -o gen_fvecs gen_fvecs.cpp
+./gen_fvecs
+```
+
+Build the indexer and start indexing.
+
+```bash
+mkdir indexes/acorn/
+cmake -B build .
+cmake --build build -j
+mv build/index_acorn .
+./index_acorn
 ```
