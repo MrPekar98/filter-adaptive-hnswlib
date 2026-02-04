@@ -11,6 +11,7 @@
 
 namespace hnswlib
 {
+    // This implementation assumes that IDs er continuous integers starting from 1
     template<typename tag_type>
     class RelationshipGraph
     {
@@ -47,6 +48,22 @@ namespace hnswlib
 
             free(distances);
             free(frequencies);
+        }
+
+        void initDistances(distance_type* array, size_t n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                array[i] = 0.0;
+            }
+        }
+
+        void initFrequencies(uint32_t* array, size_t n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                array[i] = 0;
+            }
         }
 
         // Synchronizes the index of weighted tag distances by expanding capacity when needed and inserted new tags in the tag index
@@ -86,8 +103,8 @@ namespace hnswlib
 
                     // Distances are bi-directional
                     distance_type distance = dijkstra.distance(newTag, oldTag);
-                    distances[newTag][oldTag] = distance;
-                    distances[oldTag][newTag] = distance;
+                    distances[newTag - 1][oldTag - 1] = distance;
+                    distances[oldTag - 1][newTag - 1] = distance;
                 }
             }
         }
@@ -114,8 +131,8 @@ namespace hnswlib
                         throw std::runtime_error("Not enough memory");
                     }
 
-                    memset(distances[i], 0, newCapacity);
-                    memset(frequencies[i], 0, newCapacity);
+                    initDistances(distances[i], newCapacity);
+                    initFrequencies(frequencies[i], newCapacity);
                 }
             }
 
@@ -144,8 +161,8 @@ namespace hnswlib
                         throw std::runtime_error("Not enough memory");
                     }
 
-                    memset(distances[i] + distancesCapacity, 0, newCapacity - distancesCapacity);
-                    memset(frequencies[i] + distancesCapacity, 0, newCapacity - distancesCapacity);
+                    initDistances(distances[i] + distancesCapacity, newCapacity - distancesCapacity);
+                    initFrequencies(frequencies[i] + distancesCapacity, newCapacity - distancesCapacity);
                 }
 
                 for (int i = distancesCapacity; i < newCapacity; i++)
@@ -158,8 +175,8 @@ namespace hnswlib
                         throw std::runtime_error("Not enough memory");
                     }
 
-                    memset(distances[i], 0, newCapacity);
-                    memset(frequencies[i], 0, newCapacity);
+                    initDistances(distances[i], newCapacity);
+                    initFrequencies(frequencies[i], newCapacity);
                 }
             }
 
@@ -271,8 +288,8 @@ namespace hnswlib
 
             for (int i = 0; i < distancesCapacity; i++)
             {
-                memset(distances[i], 0, distancesCapacity);
-                memset(frequencies[i], 0, distancesCapacity);
+                initDistances(distances[i], distancesCapacity);
+                initFrequencies(frequencies[i], distancesCapacity);
             }
         }
 
