@@ -6,6 +6,7 @@
 #include <queue>
 #include <stdexcept>
 #include <cstdlib>
+#include <algorithm>
 #include "shortest_path.h"
 
 namespace hnswlib
@@ -63,7 +64,7 @@ namespace hnswlib
 
             if (maxTagId > distancesCapacity)
             {
-                resizeDistances(std::max(maxTagId, distancesCapacity + 10));
+                resizeDistances(std::max(static_cast<unsigned>(maxTagId), static_cast<unsigned>(distancesCapacity + 10)));
             }
 
             Dijkstra<tag_type, distance_type> dijkstra(adjMatrix, frequencies);
@@ -78,6 +79,11 @@ namespace hnswlib
             {
                 for (const tag_type& oldTag : allTags)
                 {
+                    if (oldTag == newTag)
+                    {
+                        continue;
+                    }
+
                     // Distances are bi-directional
                     distance_type distance = dijkstra.distance(newTag, oldTag);
                     distances[newTag][oldTag] = distance;
@@ -173,19 +179,6 @@ namespace hnswlib
         {
             std::unordered_set<tag_type> newTags;
 
-            for (const tag_type& tagId : tagIds)    // This extra loop is needed to make sure we have allocated enough memory for the frequencies index
-            {
-                if (adjMatrix.find(tagId) == adjMatrix.end())
-                {
-                    newTags.insert(tagId);
-                }
-            }
-
-            if (!newTags.empty())
-            {
-                syncDistances(newTags);
-            }
-
             for (const tag_type& tagId : tagIds)
             {
                 std::unordered_set<tag_type> related = tagIds;
@@ -199,7 +192,19 @@ namespace hnswlib
                 else
                 {
                     adjMatrix.insert({tagId, related});
+                    newTags.insert(tagId);
                 }
+            }
+
+            if (!newTags.empty())
+            {
+                syncDistances(newTags);
+            }
+
+            for (const tag_type& tagId : tagIds)
+            {
+                std::unordered_set<tag_type> related = tagIds;
+                related.erase(tagId);
 
                 for (const tag_type& relatedTag : related)  // Increments frequencies for existing tag edges
                 {
