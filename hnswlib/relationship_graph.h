@@ -31,12 +31,39 @@ namespace hnswlib
             resizeDistances(10);
         }
 
+        ~RelationshipGraph()
+        {
+            freeAll();
+        }
+
+        void freeAll()
+        {
+            for (int i = 0; i < distancesCapacity; i++)
+            {
+                free(distances[i]);
+                free(frequencies[i]);
+            }
+
+            free(distances);
+            free(frequencies);
+        }
+
         // Synchronizes the index of weighted tag distances by expanding capacity when needed and inserted new tags in the tag index
         void syncDistances(const std::unordered_set<tag_type>& newTags)
         {
-            if (newTags.size() + distancesCount > distancesCapacity)
+            tag_type maxTagId = 0;
+
+            for (const tag_type& tagId : newTags)
             {
-                resizeDistances(distancesCapacity + newTags.size() + 10);
+                if (tagId > maxTagId)
+                {
+                    maxTagId = tagId;
+                }
+            }
+
+            if (maxTagId > distancesCapacity)
+            {
+                resizeDistances(std::max(maxTagId, distancesCapacity + 10));
             }
 
             Dijkstra<tag_type, distance_type> dijkstra(adjMatrix, frequencies);
@@ -64,7 +91,7 @@ namespace hnswlib
             if (!distances)
             {
                 distances = (distance_type**) malloc(sizeof(distance_type*) * newCapacity);
-                frequencies = (uint32_t**) malloc(sizeof(uint32_t) * newCapacity);
+                frequencies = (uint32_t**) malloc(sizeof(uint32_t*) * newCapacity);
 
                 if (!distances || !frequencies)
                 {
@@ -273,14 +300,7 @@ namespace hnswlib
         void loadIndex(std::ifstream& input, const std::unordered_map<tag_type, std::string>& lookup,
             const std::unordered_map<std::string, tag_type>& inverted)
         {
-            for (int i = 0; i < distancesCapacity; i++)
-            {
-                free(distances[i]);
-                free(frequencies[i]);
-            }
-
-            free(distances);
-            free(frequencies);
+            freeAll();
             distances = nullptr;
             resizeDistances(distancesCapacity);
 
