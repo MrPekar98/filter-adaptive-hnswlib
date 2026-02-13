@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <filesystem>
+#include <cstdio>
 
 std::unordered_set<std::string> readQueryTags(const std::string& queryDir)
 {
@@ -58,30 +59,28 @@ std::unordered_map<std::string, unsigned> readLabelIndex(std::string file)
 
 int main()
 {
-    unsigned threads = 4, maxDegree = 32, lBuild = 100, crossEdges = 6;
-    double alpha = 1.2;
-    std::string scenario = "general", distFunction = "L2", queryDir = "queries/multi-tag/",
-        dataDir = "data/dataset_full/", newDataDir = dataDir + "multi_index_baseline_dataset/";
+    std::string queryDir = "queries/multi-tag/", dataDir = "data/dataset_full/", newDataDir = dataDir + "multi_index_baseline_dataset/";
     std::filesystem::create_directory(newDataDir);
 
-    uint64_t vectors = 32440681, dimension = 200;
+    uint64_t dimension = 200;
     unsigned count = 0;
     std::string vectorFile = "data.txt", binaryFile = newDataDir + "data.bin", line;
     std::ifstream reader(vectorFile);
     std::unordered_set<std::string> queryTags = readQueryTags(queryDir);
     std::unordered_map<std::string, std::ofstream> fileIndex;
     std::unordered_map<std::string, std::ofstream> labelFileIndex;
+    std::unordered_map<std::string, std::ofstream> uriIndex;
     std::unordered_map<std::string, unsigned> labelIndex = readLabelIndex("data/label_index.txt");
     std::unordered_map<std::string, bool> isFirstIndex;
+    std::unordered_map<std::string, unsigned> tagCounts;
     std::cout << "Setting up index binary files" << std::endl;
 
     for (const std::string& tag : queryTags)
     {
         unsigned labelId = labelIndex[tag];
         fileIndex.emplace(tag, newDataDir + "label_" + std::to_string(labelId) + ".bin");
-        fileIndex[tag].write(reinterpret_cast<const char*>(&vectors), sizeof(vectors));
-        fileIndex[tag].write(reinterpret_cast<const char*>(&dimension), sizeof(dimension));
         labelFileIndex.emplace(tag, newDataDir + "label_" + std::to_string(labelId) + ".txt");
+        uriIndex.emplace(tag, newDataDir + "label_" + std::to_string(labelId) + "_uri_mapping.txt");
         isFirstIndex.insert({tag, true});
     }
 
@@ -116,7 +115,14 @@ int main()
 
             labelFileIndex[tag] << "\n";
 
+            if (tagCounts.find(tag) == tagCounts.end())
+            {
+                tagCounts.insert({tag, 0});
+            }
+
             std::istringstream vectorStream(vectorString);
+            uriIndex[tag] << uri << "\n";
+            tagCounts[tag]++;
 
             while (std::getline(vectorStream, line, ' '))
             {
@@ -132,6 +138,35 @@ int main()
         }
 
         count++;
+    }
+
+    std::cout << "Adding metadata" << std::endl;
+
+    for (const auto& pair : labelIndex)
+    {
+        std::string currentFilename = newDataDir + "label_" + std::to_string(pair.second) + ".bin",
+            tmpFilename = currentFilename + ".tmp";
+        fileIndex[pair.first].close();
+        labelFileIndex[pair.first].close();
+        uriIndex[pair.first].close();
+        std::rename(currentFilename.c_str(), tmpFilename.c_str());
+
+        std::ofstream writer(currentFilename);
+        std::ifstream reader(tmpFilename);
+        uint64_t vectors = tagCounts[pair.first];
+        writer.write(reinterpret_cast<const char*>(&vectors), sizeof(vectors));
+        writer.write(reinterpret_cast<const char*>(&dimension), sizeof(dimension));
+
+        std::vector<char> buffer(sizeof(float));
+
+        while (reader.read(buffer.data(), sizeof(float)))
+        {
+            writer.write(buffer.data(), sizeof(float));
+        }
+
+        writer.close();
+        reader.close();
+        std::remove(tmpFilename.c_str());
     }
 
     std::cout << "Done" << std::endl;

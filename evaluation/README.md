@@ -107,6 +107,12 @@ When all three baselines have been evaluated, we can evaluate the ranking using 
 python ndcg.py
 ```
 
+We can also evaluate recall.
+
+```bash
+python recall.py
+```
+
 ### Evaluating External Baselines
 #### Unified Navigating Graph
 As previously mentioned, we also evaluate <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our external baseline for filtered vector search.
@@ -157,6 +163,16 @@ python construct_multi_index_ung.py
 ```
 
 Finally, run the queries.
+
+```bash
+python search_gt_ung.py
+```
+
+You can now evaluate recall of UNG.
+
+```bash
+python recall_ung.py
+```
 
 #### ACORN
 
