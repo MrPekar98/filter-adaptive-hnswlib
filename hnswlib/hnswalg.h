@@ -563,7 +563,7 @@ public:
         std::priority_queue<std::pair<double, tableint>> most_similar;
         std::unordered_map<tableint, dist_t> distances;
 
-        while (top_candidates.size() > 0)
+        while (!top_candidates.empty())
         {
             auto pair = top_candidates.top();
             std::vector<std::string> candidate_tags = tag_index.get(pair.second);
@@ -578,7 +578,7 @@ public:
             tableint id = most_similar.top().second;
             dist_t distance = distances[id];
             most_similar.pop();
-            top_candidates.emplace(distances, id);
+            top_candidates.emplace(-distance, id);
         }
     }
 
