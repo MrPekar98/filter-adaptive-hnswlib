@@ -46,7 +46,7 @@ std::unordered_set<std::string> readQueryTags(const std::string& queryDir)
 
 int main()
 {
-    std::string dataFile = "data_small.txt", indexDir = "indexes/", postfilterIndexFile = indexDir + "postfilter_index.idx",
+    std::string dataFile = "data.txt", indexDir = "indexes/", postfilterIndexFile = indexDir + "postfilter_index.idx",
         multiIndexIndexFile = indexDir + "multi_index_index.idx", adaptiveIndexFile = indexDir + "adaptive_index.idx",
         mappingFile = indexDir + "baseline_mappings.txt", queryDir = "queries/single-tag/", line;
     std::unordered_set<std::string> queryTags = readQueryTags(queryDir);

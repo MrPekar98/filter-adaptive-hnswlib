@@ -5,7 +5,7 @@ set -e
 RESULT_DIR="results/ung/ung/"
 DATA_TYPE="float"
 DIST_FN="L2"
-K=1000
+K=100
 DATA_DIR="data/dataset_full/"
 BASE_BIN_FILE="${DATA_DIR}data.bin"
 BASE_LABEL_FILE="${DATA_DIR}labels.txt"
@@ -28,7 +28,7 @@ do
             Q_ID=${QUERY:0:-4}
             Q_LABEL="${Q_ID}_labels.txt"
             Q_RESULT_DIR="${RESULT_DIR}${Q_ID:13:100}"
-            mkdir -p ${Q_ID}
+            mkdir -p ${Q_RESULT_DIR}
 
             ./Unified-Navigating-Graph/build/apps/search_UNG_index \
                 --data_type ${DATA_TYPE} \
@@ -37,8 +37,8 @@ do
                 --K ${K} \
                 --base_bin_file ${BASE_BIN_FILE} \
                 --base_label_file ${BASE_LABEL_FILE} \
-                --query_bin_file data/queries/single-tag/heterogeneous/50th-percentile/q36.bin \
-                --query_label_file data/queries/single-tag/heterogeneous/50th-percentile/q36_labels.txt \
+                --query_bin_file ${QUERY} \
+                --query_label_file ${Q_LABEL} \
                 --gt_file ${GT_FILE} \
                 --index_path_prefix ${INDEX_DIR} \
                 --result_path_prefix ${Q_RESULT_DIR} \

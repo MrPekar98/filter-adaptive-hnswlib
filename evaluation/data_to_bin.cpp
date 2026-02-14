@@ -72,7 +72,7 @@ int main()
     uint64_t vectors = 32440681, dimension = 200;
     std::string vector_file = "data.txt", binary_file = "data/dataset_full/data.bin";
     std::ifstream reader(vector_file);
-    std::ofstream writer(binary_file), label_writer("data/dataset_full/labels.txt"), label_index_file("data/label_index.txt");
+    std::ofstream writer(binary_file), label_writer("data/dataset_full/labels.txt"), label_index_file("data/label_index.txt"), uri_writer("data/dataset_full/uri_mapping.txt");
     std::string line;
     unsigned count = 0, labelCount = 2;
     std::unordered_map<std::string, int> labelIndex;
@@ -84,6 +84,7 @@ int main()
     {
         std::string uri = line;
         std::getline(reader, line);
+        uri_writer << uri << "\n";
 
         std::string tagString = line;
         std::istringstream tagStream(tagString);

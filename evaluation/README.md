@@ -107,6 +107,12 @@ When all three baselines have been evaluated, we can evaluate the ranking using 
 python ndcg.py
 ```
 
+We can also evaluate recall.
+
+```bash
+python recall.py
+```
+
 ### Evaluating External Baselines
 #### Unified Navigating Graph
 As previously mentioned, we also evaluate <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our external baseline for filtered vector search.
@@ -128,7 +134,7 @@ cd Unified-Navigating-Graph/build/
 make -j
 cd ../../
 ./Unified-Navigating-Graph/build/apps/build_UNG_index \
-    --data_type float --dist_fn L2 --num_threads 32 --max_degree 32 --Lbuild 100 --alpha 1.2 \
+    --data_type float --dist_fn L2 --num_threads 4 --max_degree 32 --Lbuild 100 --alpha 1.2 \
     --base_bin_file data/dataset_full/data.bin --base_label_file data/dataset_full/labels.txt \
     --index_path_prefix indexed/ung/ --scenario general --num_cross_edges 6
 ```
@@ -140,6 +146,33 @@ Now, perform filtered vector search.
 ```
 
 The results can then be found in `results/ung/`.
+
+Similar as previously, we construct a ground truth set by constructing UNG indexes for each query filter.
+We then compare the results from UNG to the UNG-version that has indexes for each query filter.
+First, construct the indexes.
+
+```bash
+g++ -std=c++17 -o prepare_ung_grund_truth prepare_ung_grund_truth.cpp
+./prepare_ung_grund_truth
+```
+
+Then, construct the indexes.
+
+```bash
+python construct_multi_index_ung.py
+```
+
+Finally, run the queries.
+
+```bash
+python search_gt_ung.py
+```
+
+You can now evaluate recall of UNG.
+
+```bash
+python recall_ung.py
+```
 
 #### ACORN
 
