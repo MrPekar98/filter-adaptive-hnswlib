@@ -304,10 +304,18 @@ namespace hnswlib
 
         [[nodiscard]] double jaccardSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const
         {
-            std::unordered_set<std::string> tagsUnion(tags1.begin(), tags1.end()), tagsIntersection;
-            std::copy_if(tags2.begin(), tags2.end(), std::back_inserter(tagsIntersection),
-                [&tagsUnion](const std::string& tag) { return tagsUnion.find(tag) != tagsUnion.end(); });
+            std::unordered_set<std::string> tagsUnion(tags1.begin(), tags1.end()), tagsIntersection, tags1Set, tags2Set;
             tagsUnion.insert(tags2.begin(), tags2.end());
+            tags1Set.insert(tags1.begin(), tags1.end());
+            tags2Set.insert(tags2.begin(), tags2.end());
+
+            for (const std::string& tag : tags1Set)
+            {
+                if (tags2Set.find(tag) != tags2Set.end())
+                {
+                    tagsIntersection.insert(tag);
+                }
+            }
 
             return static_cast<double>(tagsIntersection.size()) / static_cast<double>(tagsUnion.size());
         }
