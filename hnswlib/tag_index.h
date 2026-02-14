@@ -306,7 +306,7 @@ namespace hnswlib
         {
             std::unordered_set<std::string> tagsUnion(tags1.begin(), tags1.end()), tagsIntersection;
             std::copy_if(tags2.begin(), tags2.end(), std::back_inserter(tagsIntersection),
-                [&tagsUnion](const std::string& tag) { tagsUnion.find(tag) != tagsUnion.end(); });
+                [&tagsUnion](const std::string& tag) { return tagsUnion.find(tag) != tagsUnion.end(); });
             tagsUnion.insert(tags2.begin(), tags2.end());
 
             return static_cast<double>(tagsIntersection.size()) / static_cast<double>(tagsUnion.size());
