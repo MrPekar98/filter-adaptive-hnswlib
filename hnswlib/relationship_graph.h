@@ -3,7 +3,6 @@
 #include <fstream>
 #include <unordered_map>
 #include <unordered_set>
-#include <queue>
 #include <stdexcept>
 #include <cstdlib>
 #include <algorithm>
@@ -94,6 +93,8 @@ namespace hnswlib
 
             for (const tag_type& newTag : newTags)
             {
+                distance_type distance = dijkstra.distance(newTag - 1, newTag - 1); // Dijkstra does not new a target, since it computes distances to all other nodes
+
                 for (const tag_type& oldTag : allTags)
                 {
                     if (oldTag == newTag)
@@ -101,9 +102,7 @@ namespace hnswlib
                         continue;
                     }
 
-                    // Distances are bi-directional
-                    distance_type distance = dijkstra.distance(newTag, oldTag);
-                    distances[newTag - 1][oldTag - 1] = distance;
+                    distances[newTag - 1][oldTag - 1] = distance;   // -1 because node IDs start at 1
                     distances[oldTag - 1][newTag - 1] = distance;
                 }
             }
@@ -225,53 +224,19 @@ namespace hnswlib
 
                 for (const tag_type& relatedTag : related)  // Increments frequencies for existing tag edges
                 {
-                    frequencies[tagId][relatedTag]++;
-                    frequencies[relatedTag][tagId]++;
+                    frequencies[tagId - 1][relatedTag - 1]++;
+                    frequencies[relatedTag - 1][tagId - 1]++;
                 }
             }
         }
 
         [[nodiscard]] int hops(const tag_type& fromTag, const tag_type& toTag) const noexcept
         {
-            if (fromTag == toTag)
-            {
-                return 0;
-            }
-
-            else if (adjMatrix.find(fromTag) == adjMatrix.end() || adjMatrix.find(toTag) == adjMatrix.end())
-            {
-                return -1;
-            }
-
-            std::queue<std::pair<tag_type, int>> distances;
-            std::unordered_set<tag_type> visited;
-            distances.emplace(fromTag, 0);
-            visited.insert(fromTag);
-
-            while (!distances.empty())
-            {
-                auto tag = distances.front();
-                distances.pop();
-
-                for (const tag_type& related : adjMatrix.at(tag.first))
-                {
-                    if (related == toTag)
-                    {
-                        return tag.second + 1;
-                    }
-
-                    else if (visited.find(related) == visited.end())
-                    {
-                        visited.insert(related);
-                        distances.emplace(related, tag.second + 1);
-                    }
-                }
-            }
-
-            return -1;
+            BreadthFirstSearch<tag_type> bfs(adjMatrix);
+            return bfs.distance(fromTag, toTag);
         }
 
-        distance_type distance(const tag_type& fromTag, const tag_type& toTag) const
+        [[nodiscard]] distance_type distance(const tag_type& fromTag, const tag_type& toTag) const
         {
             if (fromTag >= distancesCount || toTag >= distancesCount || fromTag < 0 || toTag < 0)
             {
@@ -354,6 +319,10 @@ namespace hnswlib
                 input.read(reinterpret_cast<char*>(distances[i]), sizeof(distance_type) * distancesCapacity);
                 input.read(reinterpret_cast<char*>(frequencies[i]), sizeof(uint32_t) * distancesCapacity);
             }
+
+
+            this->lookup = lookup;
+            this->inverted = inverted;
         }
     };
 }

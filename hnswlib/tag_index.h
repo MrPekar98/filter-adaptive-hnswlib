@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 
 namespace hnswlib
 {
@@ -301,45 +302,57 @@ namespace hnswlib
             return *(maxFrequenciesPerLevel + level);
         }
 
-        // TODO: This needs changing according to the slides using Dijkstra distance aggregation
-        [[nodiscard]] double tagsSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const noexcept
+        [[nodiscard]] double jaccardSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const
+        {
+            std::unordered_set<std::string> tagsUnion(tags1.begin(), tags1.end()), tagsIntersection;
+            std::copy_if(tags2.begin(), tags2.end(), std::back_inserter(tagsIntersection),
+                [&tagsUnion](const std::string& tag) { tagsUnion.find(tag) != tagsUnion.end(); });
+            tagsUnion.insert(tags2.begin(), tags2.end());
+
+            return static_cast<double>(tagsIntersection.size()) / static_cast<double>(tagsUnion.size());
+        }
+
+        [[nodiscard]] double tagsSimilarity(const std::vector<std::string>& tags1, const std::vector<std::string>& tags2) const
         {
             if (tags1.empty() || tags2.empty())
             {
                 return 0.0;
             }
 
-            double sum = 0.0;
-            std::vector<tag_type> tagIds1, tagIds2;
-            tagIds1.reserve(tags1.size());
-            tagIds2.reserve(tags2.size());
+            double minDist = std::numeric_limits<double>::max();
 
-            for (const std::string& tag : tags1)
+            for (const std::string& tag1 : tags1)
             {
-                tag_type tagId = inverted.at(tag);
-                tagIds1.push_back(tagId);
-            }
-
-            for (const std::string& tag : tags2)
-            {
-                tag_type tagId = inverted.at(tag);
-                tagIds2.push_back(tagId);
-            }
-
-            for (const tag_type& tag1 : tagIds1)
-            {
-                for (const tag_type& tag2 : tagIds2)
+                if (inverted.find(tag1) == inverted.end())
                 {
-                    int hops = relationship_graph.hops(tag1, tag2);
+                    throw std::runtime_error("Tag '" + tag1 + "' has not been indexes");
+                }
 
-                    if (hops != -1)
+                double avgDist = 0;
+                int count = 0;
+                tag_type tag1Id = inverted.at(tag1);
+
+                for (const std::string& tag2 : tags2)
+                {
+                    if (inverted.find(tag2) == inverted.end())
                     {
-                        sum += 1.0 / (hops + 1);
+                        throw std::runtime_error("Tag '" + tag2 + "' has not been indexes");
                     }
+
+                    tag_type tag2Id = inverted.at(tag2);
+                    avgDist += relationship_graph.distance(tag1Id, tag2Id);
+                    count++;
+                }
+
+                avgDist /= count;
+
+                if (avgDist < minDist)
+                {
+                    minDist = avgDist;
                 }
             }
 
-            return sum / unionSize(tagIds1, tagIds2);
+            return 1 / (1 + minDist);
         }
 
         RelationshipGraph<tag_type>& getRelationshipGraph() noexcept
