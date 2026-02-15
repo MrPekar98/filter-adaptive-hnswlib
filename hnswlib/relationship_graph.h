@@ -93,7 +93,7 @@ namespace hnswlib
 
             for (const tag_type& newTag : newTags)
             {
-                distance_type distance = dijkstra.distance(newTag - 1, newTag - 1); // Dijkstra does not new a target, since it computes distances to all other nodes
+                distance_type distance = dijkstra.distance(newTag, newTag); // Dijkstra does not need a target, since it computes distances to all other nodes
 
                 for (const tag_type& oldTag : allTags)
                 {
@@ -152,8 +152,8 @@ namespace hnswlib
 
                 for (int i = 0; i < distancesCapacity; i++)
                 {
-                    distances[i] = (distance_type*) realloc(distances[i], newCapacity);
-                    frequencies[i] = (uint32_t*) realloc(frequencies[i], newCapacity);
+                    distances[i] = (distance_type*) realloc(distances[i], sizeof(distance_type) * newCapacity);
+                    frequencies[i] = (uint32_t*) realloc(frequencies[i], sizeof(uint32_t) * newCapacity);
 
                     if (!distances[i] || !frequencies[i])
                     {

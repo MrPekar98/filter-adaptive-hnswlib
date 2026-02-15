@@ -92,7 +92,7 @@ namespace hnswlib
         // This function stores the intermediate results, which can be reused when calling this function again
         distance_type distance(const node_type& source, const node_type& target) override
         {
-            if (source < 0 || source >= matrix.size() || target < 0 || target >= matrix.size())
+            if (source < 0 || source > matrix.size() || target < 0 || target > matrix.size())
             {
                 throw std::runtime_error("Invalid node ID");
             }
@@ -120,7 +120,7 @@ namespace hnswlib
                 {
                     prev[v - 1] = -1;
                     dist[v - 1] = std::numeric_limits<distance_type>::max();
-                    q.push(std::make_pair(v, std::numeric_limits<distance_type>::max()));
+                    q.push(std::make_pair(std::numeric_limits<distance_type>::max(), v));
                 }
             }
 
@@ -129,7 +129,7 @@ namespace hnswlib
                 auto& u = q.top();
                 q.pop();
 
-                for (const auto& v : matrix[u.second])
+                for (const auto& v : matrix.at(u.second))
                 {
                     distance_type weight = edgeWeights[u.second - 1][v - 1];
                     distance_type alt = dist[u.second - 1] + weight;
