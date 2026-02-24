@@ -40,7 +40,7 @@ if __name__ == "__main__":
     types = os.listdir(result_dir)
     print('Reading data')
 
-    postings_list = main_id_index('data/dataset/uri_mapping.txt')
+    postings_list = main_id_index('data/dataset_small/uri_mapping.txt')
     print()
 
     for type in types:

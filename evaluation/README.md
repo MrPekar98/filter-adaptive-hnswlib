@@ -168,9 +168,10 @@ Finally, run the queries.
 python search_gt_ung.py
 ```
 
-You can now evaluate recall of UNG.
+You can now evaluate NDCG and recall of UNG.
 
 ```bash
+python ndcg_ung.py
 python recall_ung.py
 ```
 
