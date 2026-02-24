@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <queue>
 #include <vector>
 #include <stdexcept>
@@ -75,7 +76,7 @@ namespace hnswlib
     private:
         std::unordered_map<node_type, std::unordered_set<node_type>> matrix;
         uint32_t** edgeWeights;
-        std::vector<distance_type> distanses;
+        uint32_t maxWeight = 0;
         std::unordered_map<node_type, std::vector<distance_type>> distances;
 
     public:
@@ -85,7 +86,16 @@ namespace hnswlib
             for (const auto& pair : matrix)
             {
                 std::vector<distance_type> nodeDistances(matrix.size(), -1);
+                size_t n = nodeDistances.size();
                 distances.insert({pair.first, nodeDistances});
+
+                for (int i = 0; i < n; i++)
+                {
+                    if (edgeWeights[pair.first][i] > maxWeight)
+                    {
+                        maxWeight = edgeWeights[pair.first][i];
+                    }
+                }
             }
         }
 
@@ -104,41 +114,41 @@ namespace hnswlib
                 return existingDistance;
             }
 
-            std::priority_queue<std::pair<double, node_type>, std::vector<std::pair<double, node_type>>, std::greater<std::pair<double, node_type>>> q;
+            std::multiset<std::pair<distance_type, node_type>> q;
             std::vector<distance_type> dist;
             std::vector<node_type> prev;
             dist.assign(matrix.size(), std::numeric_limits<distance_type>::max());
             prev.assign(matrix.size(), -1);
             dist[source - 1] = 0;
-            q.push(std::make_pair(0.0, source));
+            q.insert(std::make_pair(0, source));
 
             for (const auto& pair : matrix)
             {
                 auto& v = pair.first;
 
-                if (pair.first != source)
+                if (v != source)
                 {
                     prev[v - 1] = -1;
                     dist[v - 1] = std::numeric_limits<distance_type>::max();
-                    q.push(std::make_pair(std::numeric_limits<distance_type>::max(), v));
+                    q.insert(std::make_pair(std::numeric_limits<distance_type>::max(), v));
                 }
             }
 
             while (!q.empty())
             {
-                auto& u = q.top();
-                q.pop();
+                auto& u = *q.begin();
+                q.erase(q.begin());
 
                 for (const auto& v : matrix.at(u.second))
                 {
-                    distance_type weight = edgeWeights[u.second - 1][v - 1];
+                    double weight = (maxWeight - edgeWeights[u.second - 1][v - 1]) + 1;
                     distance_type alt = dist[u.second - 1] + weight;
 
                     if (alt < dist[v - 1])
                     {
                         prev[v - 1] = u.second;
                         dist[v - 1] = alt;
-                        q.push(std::make_pair(alt, v));
+                        q.insert(std::make_pair(alt, v));
                     }
                 }
             }

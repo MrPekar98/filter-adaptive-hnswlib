@@ -15,7 +15,7 @@ namespace hnswlib
     class RelationshipGraph
     {
     private:
-        using distance_type = double;
+        using distance_type = int32_t;
 
         std::unordered_map<tag_type, std::string>& lookup;
         std::unordered_map<std::string, tag_type>& inverted;
@@ -94,8 +94,6 @@ namespace hnswlib
 
             for (const tag_type& newTag : newTags)
             {
-                distance_type distance = dijkstra.distance(newTag, newTag); // Dijkstra does not need a target, since it computes distances to all other nodes
-
                 for (const tag_type& oldTag : allTags)
                 {
                     if (oldTag == newTag)
@@ -103,6 +101,7 @@ namespace hnswlib
                         continue;
                     }
 
+                    distance_type distance = dijkstra.distance(newTag, oldTag);
                     distances[newTag - 1][oldTag - 1] = distance;   // -1 because node IDs start at 1
                     distances[oldTag - 1][newTag - 1] = distance;
                 }
