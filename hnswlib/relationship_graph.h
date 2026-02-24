@@ -289,12 +289,12 @@ namespace hnswlib
         {
             freeAll();
             distances = nullptr;
-            resizeDistances(distancesCapacity);
 
             std::size_t size;
             input.read(reinterpret_cast<char*>(&size), sizeof(size));
             input.read(reinterpret_cast<char*>(&distancesCapacity), sizeof(distancesCapacity));
             input.read(reinterpret_cast<char*>(&distancesCount), sizeof(distancesCount));
+            resizeDistances(distancesCapacity);
 
             for (std::size_t i = 0; i < size; i++)
             {
@@ -319,7 +319,6 @@ namespace hnswlib
                 input.read(reinterpret_cast<char*>(distances[i]), sizeof(distance_type) * distancesCapacity);
                 input.read(reinterpret_cast<char*>(frequencies[i]), sizeof(uint32_t) * distancesCapacity);
             }
-
 
             this->lookup = lookup;
             this->inverted = inverted;

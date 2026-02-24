@@ -567,7 +567,7 @@ public:
         {
             auto pair = top_candidates.top();
             std::vector<std::string> candidate_tags = tag_index.get(pair.second);
-            double similarity = tag_index.jaccardSimilarity(cur_tags, candidate_tags);
+            double similarity = tag_index.tagsSimilarity(cur_tags, candidate_tags);
             top_candidates.pop();
             most_similar.emplace(similarity, pair.second);
             distances.insert({pair.first, pair.second});
