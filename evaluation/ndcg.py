@@ -61,7 +61,7 @@ if __name__ == "__main__":
     for query_type in os.listdir(multifilter_result_dir):
         path = multifilter_result_dir + query_type + '/'
         print(query_type)
-        print('Postfilter baseline')
+        """print('Postfilter baseline')
 
         for query in os.listdir(path):
             query_file = path + query
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             postfilter_ndcg = ndcg(multifilter_ranking, postfilter_ranking, mappings)
             print(str(postfilter_ndcg).replace('.', ','))
 
-        print('Adaptive baseline')
+        print('Adaptive baseline')"""
 
         for query in os.listdir(path):
             query_file = path + query
