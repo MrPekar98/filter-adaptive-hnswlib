@@ -22,7 +22,8 @@ namespace hnswlib
         std::unordered_map<tag_type, std::unordered_set<tag_type>> adjMatrix;
         distance_type** distances = nullptr;
         uint32_t** frequencies = nullptr;
-        size_t distancesCapacity, distancesCount = 0;
+        size_t distancesCapacity, distancesCount = 0, syncCount = 0;
+        static constexpr size_t SYNC_LIMIT = 1000;
 
     public:
         RelationshipGraph(std::unordered_map<tag_type, std::string>& lookup,
@@ -212,7 +213,20 @@ namespace hnswlib
                 }
             }
 
-            if (!newTags.empty())
+            if (++syncCount >= SYNC_LIMIT)
+            {
+                std::unordered_set<tag_type> allTags;
+                syncCount = 0;
+
+                for (const auto& pair : lookup)
+                {
+                    allTags.insert(pair.first);
+                }
+
+                syncDistances(allTags);
+            }
+
+            else if (!newTags.empty())
             {
                 syncDistances(newTags);
             }
