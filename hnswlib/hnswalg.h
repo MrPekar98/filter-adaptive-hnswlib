@@ -375,18 +375,7 @@ public:
             char* ep_data = getDataByInternalId(ep_id);
             dist_t dist = fstdistfunc_(data_point, ep_data, dist_func_param_);
             lowerBound = dist;
-            if (tags.empty()){
-                top_candidates.emplace(dist, ep_id);
-            } else {
-                std::vector<std::string> nodeTags = tag_index.get(ep_id);
-
-                for (const std::string& tag : tags) {
-                    if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
-                        top_candidates.emplace(dist, ep_id);
-                        break;
-                    }
-                }
-            }
+            top_candidates.emplace(dist, ep_id);    // We always know that ep_id satisfies query tags
             if (!bare_bone_search && stop_condition) {
                 stop_condition->add_point_to_result(getExternalLabel(ep_id), ep_data, dist);
             }
@@ -567,7 +556,8 @@ public:
         {
             auto pair = top_candidates.top();
             std::vector<std::string> candidate_tags = tag_index.get(pair.second);
-            double similarity = tag_index.tagsSimilarity(cur_tags, candidate_tags);
+            double similarity = tag_index.jaccardSimilarity(cur_tags, candidate_tags);
+            //double similarity = tag_index.tagsSimilarity(cur_tags, candidate_tags);
             top_candidates.pop();
             most_similar.emplace(similarity, pair.second);
             distances.insert({pair.first, pair.second});
@@ -1496,15 +1486,14 @@ public:
                     dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
-                        //curdist = d;
-                        //currObj = cand;
-                        //changed = true;
                         std::vector<std::string> nodeTags = tag_index.get(cand);
 
                         for (const std::string& tag : tags) {
 
                             if (std::find(nodeTags.begin(), nodeTags.end(), tag) != nodeTags.end()) {
                                 currObj = cand;
+                                curdist = d;
+                                changed = true;
                                 break;
                             }
                         }
