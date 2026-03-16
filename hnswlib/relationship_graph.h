@@ -5,7 +5,6 @@
 #include <unordered_set>
 #include <stdexcept>
 #include <cstdlib>
-#include <algorithm>
 #include "shortest_path.h"
 
 namespace hnswlib
@@ -77,11 +76,6 @@ namespace hnswlib
                 {
                     maxTagId = pair.second;
                 }
-            }
-
-            if (maxTagId >= distancesCapacity)
-            {
-                resizeDistances(static_cast<unsigned>(maxTagId));
             }
 
             Dijkstra<tag_type, distance_type> dijkstra(adjMatrix, frequencies);
@@ -211,6 +205,11 @@ namespace hnswlib
                 {
                     adjMatrix.insert({tagId, related});
                     newTags.insert(tagId);
+                }
+
+                if (tagId >= distancesCapacity)
+                {
+                    resizeDistances(distancesCapacity * 2);
                 }
             }
 
