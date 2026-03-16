@@ -9,7 +9,14 @@ One split contains entities with RDF types belonging to the 90th percentile of R
 The following setup steps recreate the experimental data, including the embeddings and knowledge graph.
 
 ## Setup
-First, run the following command to fetch the RDF embeddings and entity types from the DBpedia 2021 knowledge graph.
+Start by computing the absolute ground truth.
+This is a time-consuming task you can run in the background.
+
+```bash
+python abs_ground_truth.py
+```
+
+Run the following command to fetch the RDF embeddings and entity types from the DBpedia 2021 knowledge graph.
 
 ```bash
 ./setup.sh

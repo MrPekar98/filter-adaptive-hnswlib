@@ -79,7 +79,7 @@ namespace hnswlib
                 }
             }
 
-            if (maxTagId > distancesCapacity)
+            if (maxTagId >= distancesCapacity)
             {
                 resizeDistances(std::max(static_cast<unsigned>(maxTagId), static_cast<unsigned>(distancesCapacity + 10)));
             }
