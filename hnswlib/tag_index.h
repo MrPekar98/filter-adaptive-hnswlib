@@ -228,7 +228,6 @@ namespace hnswlib
             }
 
             count++;
-            relationship_graph.relate(tagIds);
         }
 
         [[nodiscard]] std::vector<std::string> get(const T& internalId) const
@@ -258,6 +257,17 @@ namespace hnswlib
             return tags;
         }
 
+        [[nodiscard]] tag_type assignId(const std::string& tag) noexcept
+        {
+            if (inverted.find(tag) == inverted.end())
+            {
+                lookup.insert({tagIdCounter, tag});
+                inverted.insert({tag, tagIdCounter++});
+            }
+
+            return inverted[tag];
+        }
+
         [[nodiscard]] size_t size() const noexcept
         {
             return count;
@@ -266,11 +276,6 @@ namespace hnswlib
         [[nodiscard]] bool exists(const std::string& tag) const noexcept
         {
             return inverted.find(tag) != inverted.end();
-        }
-
-        const RelationshipGraph<tag_type>& getRelationships() const noexcept
-        {
-            return relationship_graph;
         }
 
         [[nodiscard]] unsigned frequency(const std::string& tag, unsigned level) const

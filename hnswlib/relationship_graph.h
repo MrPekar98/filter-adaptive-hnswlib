@@ -67,21 +67,21 @@ namespace hnswlib
         }
 
         // Synchronizes the index of weighted tag distances by expanding capacity when needed and inserted new tags in the tag index
-        void syncDistances(const std::unordered_set<tag_type>& newTags)
+        void computeDistances()
         {
             tag_type maxTagId = 0;
 
-            for (const tag_type& tagId : newTags)
+            for (const auto& pair : inverted)
             {
-                if (tagId > maxTagId)
+                if (pair.second > maxTagId)
                 {
-                    maxTagId = tagId;
+                    maxTagId = pair.second;
                 }
             }
 
             if (maxTagId >= distancesCapacity)
             {
-                resizeDistances(std::max(static_cast<unsigned>(maxTagId), static_cast<unsigned>(distancesCapacity + 10)));
+                resizeDistances(static_cast<unsigned>(maxTagId));
             }
 
             Dijkstra<tag_type, distance_type> dijkstra(adjMatrix, frequencies);
@@ -92,18 +92,20 @@ namespace hnswlib
                 allTags.insert(pair.first);
             }
 
-            for (const tag_type& newTag : newTags)
+            for (const tag_type& tag1 : allTags)
             {
-                for (const tag_type& oldTag : allTags)
+                for (const tag_type& tag2 : allTags)
                 {
-                    if (oldTag == newTag)
+                    if (tag1 == tag2)
                     {
+                        distances[tag1 - 1][tag2 - 1] = 0;
+                        distances[tag2 - 1][tag1 - 1] = 0;
                         continue;
                     }
 
-                    distance_type distance = dijkstra.distance(newTag, oldTag);
-                    distances[newTag - 1][oldTag - 1] = distance;   // -1 because node IDs start at 1
-                    distances[oldTag - 1][newTag - 1] = distance;
+                    distance_type distance = dijkstra.distance(tag1, tag2);
+                    distances[tag1 - 1][tag2 - 1] = distance;   // -1 because node IDs start at 1
+                    distances[tag2 - 1][tag1 - 1] = distance;
                 }
             }
         }
@@ -210,24 +212,6 @@ namespace hnswlib
                     adjMatrix.insert({tagId, related});
                     newTags.insert(tagId);
                 }
-            }
-
-            if (++syncCount >= SYNC_LIMIT)
-            {
-                std::unordered_set<tag_type> allTags;
-                syncCount = 0;
-
-                for (const auto& pair : lookup)
-                {
-                    allTags.insert(pair.first);
-                }
-
-                syncDistances(allTags);
-            }
-
-            else if (!newTags.empty())
-            {
-                syncDistances(newTags);
             }
 
             for (const tag_type& tagId : tagIds)

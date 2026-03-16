@@ -62,9 +62,31 @@ int main()
     PostfilterHNSW<float> postfilterHnsw(&space, entries);
     MultiIndexHNSW<float> multiIndexHnsw(&space, queryTags, entries);
     HierarchicalNSW<float> adaptiveHnsw(&space, entries, 16, 200, 100, false, true);
-    std::ifstream stream(dataFile);
+    std::ifstream stream(dataFile), tagsStream(dataFile);
     std::ofstream mappingStream(mappingFile);
+    std::cout << "Indexing tags" << std::endl;
+
+    while (std::getline(tagsStream, line))
+    {
+        std::string uri = line;
+        std::getline(tagsStream, line);
+
+        std::string tagsLine = line;
+        std::vector<std::string> tags;
+        std::istringstream tokenStreamTags(tagsLine);
+        std::getline(tagsStream, line);
+
+        while (std::getline(tokenStreamTags, line, ' '))
+        {
+            tags.push_back(line);
+        }
+
+        adaptiveHnsw.addNodeTags(tags);
+    }
+
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+    tagsStream.close();
+    adaptiveHnsw.flushTags();
     std::cout << "Loading data now" << std::endl;
 
     while (std::getline(stream, line))

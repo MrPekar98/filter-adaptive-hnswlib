@@ -1445,6 +1445,23 @@ public:
         }
     }
 
+    void addNodeTags(const std::vector<std::string>& tags)
+    {
+        std::unordered_set<unsigned> tagIds;
+
+        for (const std::string& tag : tags)
+        {
+            tagIds.emplace(tag_index.assignId(tag));
+        }
+
+        tag_index.getRelationshipGraph().relate(tagIds);
+    }
+
+    void flushTags()
+    {
+        tag_index.getRelationshipGraph().computeDistances();
+    }
+
     std::priority_queue<std::pair<dist_t, labeltype >>
     searchKnn(const void *query_data, size_t k, const std::vector<std::string>& tags, BaseFilterFunctor* isIdAllowed = nullptr) const {
         std::priority_queue<std::pair<dist_t, labeltype >> result;
