@@ -1307,6 +1307,7 @@ public:
         }
 
         element_levels_[cur_c] = curlevel;
+        tag_index.insert(cur_c, tags, curlevel);
 
         std::unique_lock <std::mutex> templock(global);
         int maxlevelcopy = maxlevel_;
@@ -1382,7 +1383,6 @@ public:
             maxlevel_ = curlevel;
         }
 
-        tag_index.insert(cur_c, tags, curlevel);
         return cur_c;
     }
 

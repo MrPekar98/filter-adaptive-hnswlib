@@ -338,7 +338,7 @@ namespace hnswlib
             {
                 if (inverted.find(tag1) == inverted.end())
                 {
-                    throw std::runtime_error("Tag '" + tag1 + "' has not been indexes");
+                    throw std::runtime_error("Tag '" + tag1 + "' has not been indexed");
                 }
 
                 double avgDist = 0;
@@ -349,11 +349,16 @@ namespace hnswlib
                 {
                     if (inverted.find(tag2) == inverted.end())
                     {
-                        throw std::runtime_error("Tag '" + tag2 + "' has not been indexes");
+                        throw std::runtime_error("Tag '" + tag2 + "' has not been indexed");
                     }
 
                     tag_type tag2Id = inverted.at(tag2);
-                    avgDist += relationship_graph.distance(tag1Id, tag2Id);
+
+                    if (tag1Id != tag2Id)
+                    {
+                        avgDist += relationship_graph.distance(tag1Id, tag2Id);
+                    }
+
                     count++;
                 }
 

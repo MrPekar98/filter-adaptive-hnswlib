@@ -90,6 +90,8 @@ namespace hnswlib
             {
                 for (const tag_type& tag2 : allTags)
                 {
+                    distancesCount = std::max(distancesCount, std::max(tag1, tag2));
+
                     if (tag1 == tag2)
                     {
                         distances[tag1 - 1][tag2 - 1] = 0;
@@ -234,13 +236,13 @@ namespace hnswlib
 
         [[nodiscard]] distance_type distance(const tag_type& fromTag, const tag_type& toTag) const
         {
-            if (fromTag >= distancesCount || toTag >= distancesCount || fromTag < 0 || toTag < 0)
+            if (fromTag > distancesCount || toTag > distancesCount || fromTag <= 0 || toTag <= 0)
             {
                 throw std::runtime_error("Invalid tag ID in distance function: fromTag (" + std::to_string(fromTag) +
                     ") and toTag (" + std::to_string(toTag) + ") must be greater than 0 and smaller than " + std::to_string(distancesCount));
             }
 
-            return distances[fromTag][toTag];
+            return distances[fromTag - 1][toTag - 1];
         }
 
         void clear() noexcept
