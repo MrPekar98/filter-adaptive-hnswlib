@@ -9,13 +9,6 @@ One split contains entities with RDF types belonging to the 90th percentile of R
 The following setup steps recreate the experimental data, including the embeddings and knowledge graph.
 
 ## Setup
-Start by computing the absolute ground truth.
-This is a time-consuming task you can run in the background.
-
-```bash
-python abs_ground_truth.py
-```
-
 Run the following command to fetch the RDF embeddings and entity types from the DBpedia 2021 knowledge graph.
 
 ```bash
@@ -27,6 +20,12 @@ Run the following scripts to generate queries and ground truth.
 ```bash
 python gen_queries.py
 python process_input_data.py
+```
+
+Compute the absolute ground truth, which a time-consuming task hat you can run in the background.
+
+```bash
+python abs_ground_truth.py
 ```
 
 To gain insights into the RDF type distribution, run the following script.
@@ -143,7 +142,7 @@ cd ../../
 ./Unified-Navigating-Graph/build/apps/build_UNG_index \
     --data_type float --dist_fn L2 --num_threads 4 --max_degree 32 --Lbuild 100 --alpha 1.2 \
     --base_bin_file data/dataset_full/data.bin --base_label_file data/dataset_full/labels.txt \
-    --index_path_prefix indexed/ung/ --scenario general --num_cross_edges 6
+    --index_path_prefix indexes/ung/ --scenario general --num_cross_edges 6
 ```
 
 Now, perform filtered vector search.
