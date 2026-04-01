@@ -28,3 +28,4 @@ evaluation/index_acorn
 evaluation/gen_fvecs
 evaluation/ACORN/
 evaluation/ground_truth/
+evaluation/other_datasets/

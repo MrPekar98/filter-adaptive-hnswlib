@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <stdexcept>
 #include <cstdlib>
+#include <algorithm>
 #include "shortest_path.h"
 
 namespace hnswlib
@@ -90,7 +91,7 @@ namespace hnswlib
             {
                 for (const tag_type& tag2 : allTags)
                 {
-                    distancesCount = std::max(distancesCount, std::max(tag1, tag2));
+                    distancesCount = std::max((unsigned) distancesCount, std::max(tag1, tag2));
 
                     if (tag1 == tag2)
                     {
