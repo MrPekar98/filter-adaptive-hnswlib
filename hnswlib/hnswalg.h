@@ -1469,7 +1469,7 @@ public:
 
         tableint currObj = enterpoint_node_;
         unsigned maxTagFrequency = 0, startLevel = maxlevel_;
-        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(currObj), dist_func_param_);
 
         for (const std::string& tag : tags) // Choose the most popular tag, as this should provide the best search-quality performance
         {
@@ -1480,6 +1480,7 @@ public:
                 auto pair = enterpoints.at(tag);
                 startLevel = pair.first;
                 currObj = pair.second;
+                curdist = fstdistfunc_(query_data, getDataByInternalId(currObj), dist_func_param_);
                 maxTagFrequency = tagFrequency;
             }
         }

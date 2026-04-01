@@ -40,6 +40,23 @@ Similarly, run the following script to gain insight into the type distribution i
 python query_histogram.py
 ```
 
+### Setup of External Datasets
+We also setup external datasets, such as <a href="https://gittables.github.io/">GitTables</a>.
+
+#### GitTables
+<a href="https://gittables.github.io/">GitTables</a> contains a large number of tables annotated with semantic types.
+We use the dataset to evaluate filtered vector search for table columns, and we use the table column types as tags/filters.
+
+Create directory `other_datasets/gittables/` and navigate into it.
+Run the following command to download the dataset files.
+
+```bash
+wget https://zenodo.org/api/records/6517052/files-archive -O files-archive.zip
+unzip files-archive.zip
+rm files-archive.zip
+for ZIP_FILE in *.zip ; do unzip ${ZIP_FILE} ; done
+```
+
 ### Setup of Baseline
 #### Unified Navigating Graph
 We setup <a href="https://github.com/YZ-Cai/Unified-Navigating-Graph">UNG</a> as our baseline for filtered vector search.
