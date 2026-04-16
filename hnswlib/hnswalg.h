@@ -506,13 +506,14 @@ public:
         }
 
         std::priority_queue<std::pair<dist_t, tableint>> queue_closest;
+        std::priority_queue<double, tableint> queue_tag_closest;
         std::vector<std::pair<dist_t, tableint>> return_list;
-        while (top_candidates.size() > 0) {
+        while (!top_candidates.empty()) {
             queue_closest.emplace(-top_candidates.top().first, top_candidates.top().second);
             top_candidates.pop();
         }
 
-        while (queue_closest.size()) {
+        while (!queue_closest.empty()) {
             if (return_list.size() >= M)
                 break;
             std::pair<dist_t, tableint> curent_pair = queue_closest.top();
@@ -569,6 +570,52 @@ public:
             dist_t distance = distances[id];
             most_similar.pop();
             top_candidates.emplace(-distance, id);
+        }
+    }
+
+    void getNeighborsByHeuristic4(
+        tableint cur_c,
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> &top_candidates,
+        const size_t M) {
+        if (top_candidates.size() < M) {
+            return;
+        }
+
+        std::vector<std::string> cur_tags = tag_index.get(cur_c);
+        std::priority_queue<std::pair<double, tableint>, std::vector<double, tableint>, CompareByFirst> queue_tags_closest;
+        std::vector<std::pair<dist_t, tableint>> return_list;
+        while (!top_candidates.empty()) {
+            std::vector<std::string> tags = tag_index.get(top_candidates.top().second);
+            double similarity = 1 - tag_index.jaccardSimilarity(cur_tags, tags);
+            queue_tags_closest.emplace(similarity, top_candidates.top().second);
+            top_candidates.pop();
+        }
+
+        while (!queue_tags_closest.empty()) {
+            if (return_list.size() >= M)
+                break;
+            std::pair<dist_t, tableint> curent_pair = queue_tags_closest.top();
+            dist_t dist_to_query = -curent_pair.first;
+            queue_tags_closest.pop();
+            bool good = true;
+
+            for (std::pair<dist_t, tableint> second_pair : return_list) {
+                dist_t curdist =
+                        fstdistfunc_(getDataByInternalId(second_pair.second),
+                                        getDataByInternalId(curent_pair.second),
+                                        dist_func_param_);
+                if (curdist < dist_to_query) {
+                    good = false;
+                    break;
+                }
+            }
+            if (good) {
+                return_list.push_back(curent_pair);
+            }
+        }
+
+        for (std::pair<dist_t, tableint> curent_pair : return_list) {
+            top_candidates.emplace(-curent_pair.first, curent_pair.second);
         }
     }
 
