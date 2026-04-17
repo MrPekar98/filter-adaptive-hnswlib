@@ -506,7 +506,6 @@ public:
         }
 
         std::priority_queue<std::pair<dist_t, tableint>> queue_closest;
-        std::priority_queue<double, tableint> queue_tag_closest;
         std::vector<std::pair<dist_t, tableint>> return_list;
         while (!top_candidates.empty()) {
             queue_closest.emplace(-top_candidates.top().first, top_candidates.top().second);
@@ -582,7 +581,7 @@ public:
         }
 
         std::vector<std::string> cur_tags = tag_index.get(cur_c);
-        std::priority_queue<std::pair<double, tableint>, std::vector<double, tableint>, CompareByFirst> queue_tags_closest;
+        std::priority_queue<std::pair<double, tableint>, std::vector<std::pair<double, tableint>>, CompareByFirst> queue_tags_closest;
         std::vector<std::pair<dist_t, tableint>> return_list;
         while (!top_candidates.empty()) {
             std::vector<std::string> tags = tag_index.get(top_candidates.top().second);
