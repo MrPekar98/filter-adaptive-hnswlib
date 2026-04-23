@@ -55,6 +55,8 @@ def read_mapping(filename):
 if __name__ == "__main__":
     top_k = 100
     result_dir = 'results/adaptive/'
+    postfilter_result_dir = 'results/postfilter_baseline/'
+    multifilter_result_dir = 'results/multifilter_baseline/'
     gt_dir = 'ground_truth/single-tag/'
     inverted_index = read_mapping('indexes/baseline_mappings.txt')
     query_categories = os.listdir(result_dir)
@@ -64,6 +66,24 @@ if __name__ == "__main__":
         diversity = category.split('_')[0] + 'geneous'
         percentile = category.split('_')[1]
         print(category.replace('_', ' '))
+
+        print('Postfilter baseline')
+
+        for query in queries:
+            results = read_results(postfilter_result_dir + category + '/' + query, k = top_k)
+            gt = read_gt(gt_dir + diversity + '/' + percentile + '/' + query, inverted_index, k = top_k)
+            score = recall(results, gt)
+            print(str(score).replace('.', ','))
+
+        print('Multifilter baseline')
+
+        for query in queries:
+            results = read_results(multifilter_result_dir + category + '/' + query, k = top_k)
+            gt = read_gt(gt_dir + diversity + '/' + percentile + '/' + query, inverted_index, k = top_k)
+            score = recall(results, gt)
+            print(str(score).replace('.', ','))
+
+        print('Adaptive baseline')
 
         for query in queries:
             results = read_results(result_dir + category + '/' + query, k = top_k)
